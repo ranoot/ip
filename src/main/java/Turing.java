@@ -3,7 +3,8 @@ import java.util.Scanner;
 /**
  * Entry point of the Turing chatbot.
  * Currently supports greeting the user, storing whatever text is typed,
- * listing the stored items on request, and exiting when the user types "bye".
+ * listing the stored tasks, marking them as done or not done, and exiting
+ * when the user types "bye".
  */
 public class Turing {
     /** Horizontal divider printed around every chatbot response. */
@@ -14,6 +15,12 @@ public class Turing {
 
     /** Command that shows everything stored so far. */
     private static final String LIST_COMMAND = "list";
+
+    /** Command prefix that marks a task as done, e.g. "mark 2". */
+    private static final String MARK_COMMAND = "mark";
+
+    /** Command prefix that marks a task as not done, e.g. "unmark 2". */
+    private static final String UNMARK_COMMAND = "unmark";
 
     /** Upper bound on the number of items, as allowed by the requirements. */
     private static final int MAX_TASKS = 100;
@@ -31,6 +38,41 @@ public class Turing {
         }
         System.out.println(DIVIDER);
         System.out.println();
+    }
+
+    /**
+     * Changes the done status of the task named by a "mark"/"unmark" command
+     * and reports the outcome to the user.
+     *
+     * @param tasks     the stored tasks
+     * @param taskCount how many entries of {@code tasks} are in use
+     * @param argument  the text after the command word, expected to be a task number
+     * @param isDone    true to mark the task as done, false to mark it as not done
+     */
+    private static void setDoneStatus(Task[] tasks, int taskCount, String argument, boolean isDone) {
+        int taskNumber;
+        try {
+            taskNumber = Integer.parseInt(argument.trim());
+        } catch (NumberFormatException e) {
+            // The user typed something like "mark two" instead of "mark 2".
+            reply("Please tell me the task number, e.g. mark 2");
+            return;
+        }
+
+        // Task numbers shown to the user start at 1, but array indexes start at 0.
+        if (taskNumber < 1 || taskNumber > taskCount) {
+            reply("There is no task " + taskNumber + " in your list.");
+            return;
+        }
+
+        Task task = tasks[taskNumber - 1];
+        if (isDone) {
+            task.markAsDone();
+            reply("Nice! I've marked this task as done:", "  " + task);
+        } else {
+            task.markAsNotDone();
+            reply("OK, I've marked this task as not done yet:", "  " + task);
+        }
     }
 
     public static void main(String[] args) {
@@ -66,6 +108,10 @@ public class Turing {
                     lines[i + 1] = (i + 1) + "." + tasks[i];
                 }
                 reply(lines);
+            } else if (input.startsWith(MARK_COMMAND + " ")) {
+                setDoneStatus(tasks, taskCount, input.substring(MARK_COMMAND.length()), true);
+            } else if (input.startsWith(UNMARK_COMMAND + " ")) {
+                setDoneStatus(tasks, taskCount, input.substring(UNMARK_COMMAND.length()), false);
             } else if (taskCount < MAX_TASKS) {
                 tasks[taskCount] = new Task(input);
                 taskCount++;
