@@ -41,6 +41,20 @@ public class Turing {
     }
 
     /**
+     * Returns the given text with surrounding whitespace removed and every run
+     * of internal whitespace collapsed into a single space. Cleaning the input
+     * up front lets the rest of the chatbot treat "  mark    2  " exactly like
+     * "mark 2", so no other code has to worry about stray spaces or tabs.
+     *
+     * @param text Raw line typed by the user.
+     * @return Text with normalized whitespace.
+     */
+    private static String normalizeWhitespace(String text) {
+        // "\\s+" matches one or more whitespace characters (spaces, tabs, ...).
+        return text.trim().replaceAll("\\s+", " ");
+    }
+
+    /**
      * Changes the done status of the task named by a "mark"/"unmark" command
      * and reports the outcome to the user.
      *
@@ -52,9 +66,9 @@ public class Turing {
     private static void setDoneStatus(Task[] tasks, int taskCount, String argument, boolean isDone) {
         int taskNumber;
         try {
-            taskNumber = Integer.parseInt(argument.trim());
+            taskNumber = Integer.parseInt(argument);
         } catch (NumberFormatException exception) {
-            // The user typed something like "mark two" instead of "mark 2".
+            // The user typed something like "mark two", or nothing at all after "mark".
             reply("Please tell me the task number, e.g. mark 2");
             return;
         }
@@ -73,6 +87,26 @@ public class Turing {
             task.markAsNotDone();
             reply("OK, I've marked this task as not done yet:", "  " + task);
         }
+    }
+
+    /**
+     * Returns the lines listing every stored task, ready to be passed to reply.
+     *
+     * @param tasks Stored tasks.
+     * @param taskCount Number of entries of tasks that are in use.
+     * @return One header line followed by one line per task.
+     */
+    private static String[] formatTaskList(Task[] tasks, int taskCount) {
+        if (taskCount == 0) {
+            return new String[] {"There is nothing in your list yet."};
+        }
+
+        String[] lines = new String[taskCount + 1];
+        lines[0] = "Here are the tasks in your list:";
+        for (int i = 0; i < taskCount; i++) {
+            lines[i + 1] = (i + 1) + "." + tasks[i];
+        }
+        return lines;
     }
 
     /**
@@ -101,23 +135,32 @@ public class Turing {
 
         // Keep handling commands until the user types "bye" (or input runs out).
         while (scanner.hasNextLine()) {
-            String input = scanner.nextLine();
+            String input = normalizeWhitespace(scanner.nextLine());
 
-            if (input.equals(EXIT_COMMAND)) {
+            // A blank line is almost certainly a stray Enter, so quietly ask again
+            // instead of storing an empty task.
+            if (input.isEmpty()) {
+                reply("Please type something so I know what to do.");
+                continue;
+            }
+
+            // Split off the first word: it is the command, and the rest is its argument.
+            // The limit of 2 keeps any remaining spaces inside the argument itself.
+            String[] words = input.split(" ", 2);
+            String command = words[0];
+            String argument = words.length > 1 ? words[1] : "";
+
+            // equalsIgnoreCase accepts "BYE", "Bye" and "bye" alike, so the user does
+            // not have to worry about capitalization.
+            if (command.equalsIgnoreCase(EXIT_COMMAND)) {
                 reply("Bye. Hope to see you again soon!");
                 break;
-            } else if (input.equals(LIST_COMMAND)) {
-                // One line per task, preceded by a header line.
-                String[] lines = new String[taskCount + 1];
-                lines[0] = "Here are the tasks in your list:";
-                for (int i = 0; i < taskCount; i++) {
-                    lines[i + 1] = (i + 1) + "." + tasks[i];
-                }
-                reply(lines);
-            } else if (input.startsWith(MARK_COMMAND + " ")) {
-                setDoneStatus(tasks, taskCount, input.substring(MARK_COMMAND.length()), true);
-            } else if (input.startsWith(UNMARK_COMMAND + " ")) {
-                setDoneStatus(tasks, taskCount, input.substring(UNMARK_COMMAND.length()), false);
+            } else if (command.equalsIgnoreCase(LIST_COMMAND)) {
+                reply(formatTaskList(tasks, taskCount));
+            } else if (command.equalsIgnoreCase(MARK_COMMAND)) {
+                setDoneStatus(tasks, taskCount, argument, true);
+            } else if (command.equalsIgnoreCase(UNMARK_COMMAND)) {
+                setDoneStatus(tasks, taskCount, argument, false);
             } else if (taskCount < MAX_TASKS) {
                 tasks[taskCount] = new Task(input);
                 taskCount++;
