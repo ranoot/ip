@@ -45,7 +45,7 @@ public class Turing {
 
         // Fixed-size array is enough here: the requirements cap the item count at 100.
         // taskCount doubles as the number of stored items and the next free index.
-        String[] tasks = new String[MAX_TASKS];
+        Task[] tasks = new Task[MAX_TASKS];
         int taskCount = 0;
 
         // Scanner reads the user's input line by line from standard input.
@@ -59,14 +59,15 @@ public class Turing {
                 reply("Bye. Hope to see you again soon!");
                 break;
             } else if (input.equals(LIST_COMMAND)) {
-                // Build the numbered list as one line per stored item.
-                String[] lines = new String[taskCount];
+                // One line per task, preceded by a header line.
+                String[] lines = new String[taskCount + 1];
+                lines[0] = "Here are the tasks in your list:";
                 for (int i = 0; i < taskCount; i++) {
-                    lines[i] = (i + 1) + ". " + tasks[i];
+                    lines[i + 1] = (i + 1) + "." + tasks[i];
                 }
                 reply(lines);
             } else if (taskCount < MAX_TASKS) {
-                tasks[taskCount] = input;
+                tasks[taskCount] = new Task(input);
                 taskCount++;
                 reply("added: " + input);
             } else {
