@@ -38,6 +38,10 @@ than as a later clean-up pass.
 
 ## Git
 
+All commit messages and branch names in this project MUST follow the SE-EDU Git
+conventions. The rules are captured in the project skill `seedu-git-standard`;
+invoke that skill before writing any commit message or creating a branch.
+
 Use lightweight tags unless the user requests an annotated tag.
 When proposing or creating a commit message, include enough detail to explain the rationale for the change.
 Do not commit or push unless explicitly asked.
