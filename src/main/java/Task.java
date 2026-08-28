@@ -11,7 +11,7 @@ public class Task {
     /**
      * Creates a task that starts off as not done.
      *
-     * @param description what the user has to do
+     * @param description What the user has to do.
      */
     public Task(String description) {
         this.description = description;
@@ -22,7 +22,7 @@ public class Task {
      * Returns the icon shown inside the status box: "X" when done, a space otherwise.
      * Using a space keeps every task the same width, so the list stays aligned.
      *
-     * @return the single-character status icon
+     * @return Single-character status icon.
      */
     public String getStatusIcon() {
         return isDone ? "X" : " ";
@@ -43,7 +43,7 @@ public class Task {
      * Overriding toString lets the task decide how it looks, so the chatbot
      * does not need to know about the status box at all.
      *
-     * @return the display form of this task
+     * @return Display form of this task.
      */
     @Override
     public String toString() {

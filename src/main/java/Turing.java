@@ -29,7 +29,7 @@ public class Turing {
      * Prints one or more lines wrapped between two dividers, so that every
      * chatbot reply has a consistent look.
      *
-     * @param lines the lines of text to show to the user
+     * @param lines Lines of text to show to the user.
      */
     private static void reply(String... lines) {
         System.out.println(DIVIDER);
@@ -44,16 +44,16 @@ public class Turing {
      * Changes the done status of the task named by a "mark"/"unmark" command
      * and reports the outcome to the user.
      *
-     * @param tasks     the stored tasks
-     * @param taskCount how many entries of {@code tasks} are in use
-     * @param argument  the text after the command word, expected to be a task number
-     * @param isDone    true to mark the task as done, false to mark it as not done
+     * @param tasks Stored tasks.
+     * @param taskCount Number of entries of tasks that are in use.
+     * @param argument Text after the command word, expected to be a task number.
+     * @param isDone True to mark the task as done, false to mark it as not done.
      */
     private static void setDoneStatus(Task[] tasks, int taskCount, String argument, boolean isDone) {
         int taskNumber;
         try {
             taskNumber = Integer.parseInt(argument.trim());
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException exception) {
             // The user typed something like "mark two" instead of "mark 2".
             reply("Please tell me the task number, e.g. mark 2");
             return;
@@ -75,6 +75,12 @@ public class Turing {
         }
     }
 
+    /**
+     * Runs the chatbot, reading commands from standard input until the user
+     * says goodbye or the input ends.
+     *
+     * @param args Command line arguments, which are not used.
+     */
     public static void main(String[] args) {
         String banner = " _____ _   _ ____  ___ _   _  ____ \n"
                 + "|_   _| | | |  _ \\|_ _| \\ | |/ ___|\n"
@@ -91,11 +97,11 @@ public class Turing {
         int taskCount = 0;
 
         // Scanner reads the user's input line by line from standard input.
-        Scanner in = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
 
         // Keep handling commands until the user types "bye" (or input runs out).
-        while (in.hasNextLine()) {
-            String input = in.nextLine();
+        while (scanner.hasNextLine()) {
+            String input = scanner.nextLine();
 
             if (input.equals(EXIT_COMMAND)) {
                 reply("Bye. Hope to see you again soon!");
