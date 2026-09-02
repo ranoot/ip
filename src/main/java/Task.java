@@ -1,7 +1,10 @@
 /**
  * Represents a single task in the user's list, along with whether it is done.
+ * Every task has a type, so this class is abstract: the concrete subclasses
+ * {@link Todo}, {@link Deadline} and {@link Event} each supply their own type
+ * icon and, where they carry extra date/time information, their own display form.
  */
-public class Task {
+public abstract class Task {
     /** What the user has to do, exactly as typed. */
     protected String description;
 
@@ -17,6 +20,15 @@ public class Task {
         this.description = description;
         this.isDone = false;
     }
+
+    /**
+     * Returns the single-character icon identifying the kind of task, such as
+     * "T" for a todo. Each subclass decides its own icon, which is why this
+     * method has no body here.
+     *
+     * @return Single-character type icon.
+     */
+    public abstract String getTypeIcon();
 
     /**
      * Returns the icon shown inside the status box: "X" when done, a space otherwise.
@@ -39,14 +51,15 @@ public class Task {
     }
 
     /**
-     * Returns the task formatted for display, e.g. {@code [X] read book}.
+     * Returns the task formatted for display, e.g. {@code [T][X] read book}.
      * Overriding toString lets the task decide how it looks, so the chatbot
-     * does not need to know about the status box at all.
+     * does not need to know about the type and status boxes at all. Subclasses
+     * that carry extra information append it to this text.
      *
      * @return Display form of this task.
      */
     @Override
     public String toString() {
-        return "[" + getStatusIcon() + "] " + description;
+        return "[" + getTypeIcon() + "][" + getStatusIcon() + "] " + description;
     }
 }
