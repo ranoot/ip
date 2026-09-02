@@ -36,6 +36,36 @@ All Java code in this project MUST follow the SE-EDU Java coding standard
 reviewing any `.java` file, and apply the rules as the code is written rather
 than as a later clean-up pass.
 
+## Code quality: SLAP
+
+All Java code in this project MUST follow the Single Level of Abstraction
+Principle (SLAP), taught in the SE-EDU textbook's "Code Quality" chapter as the
+guideline *SLAP hard*. (*Clean Code* calls the same idea "One Level of
+Abstraction per Function".)
+
+Do not mix levels of abstraction within one code fragment. In the example
+below, `readData()` is a high-level step, but the salary and tax lines are
+low-level arithmetic:
+
+```java
+// Bad                                 // Good
+readData();                            readData();
+salary = basic * rise + 1000;          processData();
+tax = isTaxable ? salary * 0.07 : 0;   displayResult();
+displayResult();
+```
+
+Also write each fragment at the highest level of abstraction possible, so a
+method reads as a summary of what it does rather than a transcript of how. Watch
+`main` in particular: it should read as the program's outline, not carry parsing
+or formatting logic inline. When a method mixes a named call with inline detail
+work, extract the detail into a well-named private method — the name is what
+restores the level.
+
+Two levels may coexist when extraction would force an awkward parameter list,
+but only if each high-level step is labelled with a comment and separated from
+its neighbours by a blank line. Prefer extraction.
+
 ## Git
 
 All commit messages and branch names in this project MUST follow the SE-EDU Git
