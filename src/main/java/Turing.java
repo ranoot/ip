@@ -53,19 +53,8 @@ public class Turing {
     /** Pattern matching the "/to" separator of an event command. */
     private static final String TO_SEPARATOR_PATTERN = "(?i)\\s*/to\\s*";
 
-    /** Upper bound on the number of tasks, as allowed by the requirements. */
-    private static final int MAX_TASKS = 100;
-
-    // Fixed-size array is enough here: the requirements cap the task count at 100.
-    // Keeping the list in fields rather than in main lets every command handler
-    // reach it without passing it through each call. A later increment replaces
-    // this pair with a dedicated TaskList class.
-
-    /** Tasks stored so far, filled from index 0 upwards. */
-    private static Task[] tasks = new Task[MAX_TASKS];
-
-    /** Number of entries of tasks that are in use, which is also the next free index. */
-    private static int taskCount = 0;
+    /** Tasks entered so far. */
+    private final TaskList tasks = new TaskList();
 
     /**
      * Prints one or more lines wrapped between two dividers, so that every
@@ -107,17 +96,16 @@ public class Turing {
      *
      * @param task Task to store.
      */
-    private static void addTask(Task task) {
-        if (taskCount == MAX_TASKS) {
-            reply("Sorry, I can only remember " + MAX_TASKS + " tasks.");
+    private void addTask(Task task) {
+        if (tasks.isFull()) {
+            reply("Sorry, I can only remember " + TaskList.MAX_TASKS + " tasks.");
             return;
         }
 
-        tasks[taskCount] = task;
-        taskCount++;
+        tasks.add(task);
         reply("Got it. I've added this task:",
                 "  " + task,
-                "Now you have " + taskCount + " tasks in the list.");
+                "Now you have " + tasks.getTaskCount() + " tasks in the list.");
     }
 
     /**
@@ -125,7 +113,7 @@ public class Turing {
      *
      * @param description What the user has to do.
      */
-    private static void addTodo(String description) {
+    private void addTodo(String description) {
         if (description.isEmpty()) {
             reply("Please tell me what the todo is, e.g. todo borrow book");
             return;
@@ -157,7 +145,7 @@ public class Turing {
      *
      * @param argument Text after the command word.
      */
-    private static void addDeadline(String argument) {
+    private void addDeadline(String argument) {
         String[] descriptionAndBy = splitAtSeparator(argument, BY_SEPARATOR_PATTERN);
         if (descriptionAndBy == null) {
             reply("Please use: deadline <task> /by <when>",
@@ -174,7 +162,7 @@ public class Turing {
      *
      * @param argument Text after the command word.
      */
-    private static void addEvent(String argument) {
+    private void addEvent(String argument) {
         String[] descriptionAndTimes = splitAtSeparator(argument, FROM_SEPARATOR_PATTERN);
         if (descriptionAndTimes == null) {
             showEventUsage();
@@ -203,7 +191,7 @@ public class Turing {
      * @param argument Text after the command word, expected to be a task number.
      * @param isDone True to mark the task as done, false to mark it as not done.
      */
-    private static void setDoneStatus(String argument, boolean isDone) {
+    private void setDoneStatus(String argument, boolean isDone) {
         int taskNumber;
         try {
             taskNumber = Integer.parseInt(argument);
@@ -213,13 +201,12 @@ public class Turing {
             return;
         }
 
-        // Task numbers shown to the user start at 1, but array indexes start at 0.
-        if (taskNumber < 1 || taskNumber > taskCount) {
+        if (!tasks.hasTaskNumber(taskNumber)) {
             reply("There is no task " + taskNumber + " in your list.");
             return;
         }
 
-        Task task = tasks[taskNumber - 1];
+        Task task = tasks.getTask(taskNumber);
         if (isDone) {
             task.markAsDone();
             reply("Nice! I've marked this task as done:", "  " + task);
@@ -234,15 +221,16 @@ public class Turing {
      *
      * @return One header line followed by one line per task.
      */
-    private static String[] formatTaskList() {
-        if (taskCount == 0) {
+    private String[] formatTaskList() {
+        if (tasks.isEmpty()) {
             return new String[] {"There is nothing in your list yet."};
         }
 
+        int taskCount = tasks.getTaskCount();
         String[] lines = new String[taskCount + 1];
         lines[0] = "Here are the tasks in your list:";
-        for (int i = 0; i < taskCount; i++) {
-            lines[i + 1] = (i + 1) + "." + tasks[i];
+        for (int taskNumber = 1; taskNumber <= taskCount; taskNumber++) {
+            lines[taskNumber] = taskNumber + "." + tasks.getTask(taskNumber);
         }
         return lines;
     }
@@ -253,7 +241,7 @@ public class Turing {
      * @param input One line of input, with its whitespace already normalized.
      * @return True if the user asked to exit.
      */
-    private static boolean handleInput(String input) {
+    private boolean handleInput(String input) {
         // A blank line is almost certainly a stray Enter, so ask again
         // instead of treating it as a command.
         if (input.isEmpty()) {
@@ -294,10 +282,8 @@ public class Turing {
     /**
      * Runs the chatbot, reading commands from standard input until the user
      * says goodbye or the input ends.
-     *
-     * @param args Command line arguments, which are not used.
      */
-    public static void main(String[] args) {
+    private void run() {
         showWelcome();
 
         // Scanner reads the user's input line by line from standard input.
@@ -308,5 +294,14 @@ public class Turing {
                 break;
             }
         }
+    }
+
+    /**
+     * Starts one chatbot session.
+     *
+     * @param args Command line arguments, which are not used.
+     */
+    public static void main(String[] args) {
+        new Turing().run();
     }
 }
