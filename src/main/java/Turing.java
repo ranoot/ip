@@ -122,7 +122,7 @@ public class Turing {
 
     /**
      * Adds a deadline described by the text after the "deadline" command word,
-     * which is expected to read "<task> /by <when>".
+     * which is expected to read {@code <task> /by <when>}.
      *
      * @param argument Text after the command word.
      */
@@ -139,7 +139,7 @@ public class Turing {
 
     /**
      * Adds an event described by the text after the "event" command word, which
-     * is expected to read "<task> /from <start> /to <end>".
+     * is expected to read {@code <task> /from <start> /to <end>}.
      *
      * @param argument Text after the command word.
      */
