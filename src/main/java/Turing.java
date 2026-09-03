@@ -19,6 +19,9 @@ public class Turing {
     /** Horizontal divider printed around every chatbot response. */
     private static final String DIVIDER = "____________________________________________________________";
 
+    /** Indent placed before a task when a reply shows it on its own line. */
+    private static final String TASK_INDENT = "  ";
+
     // The separators below are regular expressions rather than plain text, so that
     // "(?i)" can make them case insensitive and "\\s*" can absorb any spaces around
     // them. That way "/BY Sunday" and "book/by Sunday" are understood too.
@@ -83,7 +86,7 @@ public class Turing {
 
         tasks.add(task);
         reply("Got it. I've added this task:",
-                "  " + task,
+                TASK_INDENT + task,
                 "Now you have " + tasks.getTaskCount() + " tasks in the list.");
     }
 
@@ -186,13 +189,15 @@ public class Turing {
         }
 
         Task task = tasks.getTask(taskNumber);
+        String confirmation;
         if (isDone) {
             task.markAsDone();
-            reply("Nice! I've marked this task as done:", "  " + task);
+            confirmation = "Nice! I've marked this task as done:";
         } else {
             task.markAsNotDone();
-            reply("OK, I've marked this task as not done yet:", "  " + task);
+            confirmation = "OK, I've marked this task as not done yet:";
         }
+        reply(confirmation, TASK_INDENT + task);
     }
 
     /**
