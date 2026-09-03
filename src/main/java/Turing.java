@@ -69,7 +69,6 @@ public class Turing {
      * @return Text with normalized whitespace.
      */
     private static String normalizeWhitespace(String text) {
-        // "\\s+" matches one or more whitespace characters (spaces, tabs, ...).
         return text.trim().replaceAll("\\s+", " ");
     }
 
@@ -263,7 +262,6 @@ public class Turing {
     private void run() {
         showWelcome();
 
-        // Scanner reads the user's input line by line from standard input.
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNextLine()) {
             boolean shouldExit = handleInput(normalizeWhitespace(scanner.nextLine()));
