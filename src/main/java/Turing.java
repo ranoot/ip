@@ -19,27 +19,6 @@ public class Turing {
     /** Horizontal divider printed around every chatbot response. */
     private static final String DIVIDER = "____________________________________________________________";
 
-    /** Command that ends the conversation. */
-    private static final String EXIT_COMMAND = "bye";
-
-    /** Command that shows everything stored so far. */
-    private static final String LIST_COMMAND = "list";
-
-    /** Command prefix that marks a task as done, e.g. "mark 2". */
-    private static final String MARK_COMMAND = "mark";
-
-    /** Command prefix that marks a task as not done, e.g. "unmark 2". */
-    private static final String UNMARK_COMMAND = "unmark";
-
-    /** Command prefix that adds a task with no date/time, e.g. "todo borrow book". */
-    private static final String TODO_COMMAND = "todo";
-
-    /** Command prefix that adds a task with a due date, e.g. "deadline return book /by Sunday". */
-    private static final String DEADLINE_COMMAND = "deadline";
-
-    /** Command prefix that adds a task with a start and end, e.g. "event meeting /from 2pm /to 4pm". */
-    private static final String EVENT_COMMAND = "event";
-
     // The separators below are regular expressions rather than plain text, so that
     // "(?i)" can make them case insensitive and "\\s*" can absorb any spaces around
     // them. That way "/BY Sunday" and "book/by Sunday" are understood too.
@@ -249,32 +228,25 @@ public class Turing {
             return false;
         }
 
-        // Split off the first word: it is the command, and the rest is its argument.
+        // Split off the first word: it names the command, and the rest is its argument.
         // The limit of 2 keeps any remaining spaces inside the argument itself.
         String[] words = input.split(" ", 2);
-        String command = words[0];
+        String keyword = words[0];
         String argument = words.length > 1 ? words[1] : "";
 
-        // Hand the argument to the matching command. equalsIgnoreCase accepts
-        // "BYE", "Bye" and "bye" alike, so capitalization does not matter.
-        if (command.equalsIgnoreCase(EXIT_COMMAND)) {
+        switch (Command.fromKeyword(keyword)) {
+        case BYE -> {
             reply("Bye. Hope to see you again soon!");
             return true;
-        } else if (command.equalsIgnoreCase(LIST_COMMAND)) {
-            reply(formatTaskList());
-        } else if (command.equalsIgnoreCase(TODO_COMMAND)) {
-            addTodo(argument);
-        } else if (command.equalsIgnoreCase(DEADLINE_COMMAND)) {
-            addDeadline(argument);
-        } else if (command.equalsIgnoreCase(EVENT_COMMAND)) {
-            addEvent(argument);
-        } else if (command.equalsIgnoreCase(MARK_COMMAND)) {
-            setDoneStatus(argument, true);
-        } else if (command.equalsIgnoreCase(UNMARK_COMMAND)) {
-            setDoneStatus(argument, false);
-        } else {
-            reply("Sorry, I don't know what \"" + command + "\" means.",
-                    "Try: todo, deadline, event, list, mark, unmark or bye.");
+        }
+        case LIST -> reply(formatTaskList());
+        case TODO -> addTodo(argument);
+        case DEADLINE -> addDeadline(argument);
+        case EVENT -> addEvent(argument);
+        case MARK -> setDoneStatus(argument, true);
+        case UNMARK -> setDoneStatus(argument, false);
+        default -> reply("Sorry, I don't know what \"" + keyword + "\" means.",
+                "Try one of: " + Command.getKeywords() + ".");
         }
         return false;
     }
