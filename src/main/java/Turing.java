@@ -135,22 +135,37 @@ public class Turing {
     }
 
     /**
+     * Splits text into the part before the separator and the part after it.
+     * Both parts have to carry text for the split to count as successful, so
+     * "return book /by" and "/by Sunday" are both rejected.
+     *
+     * @param text Text to split, such as "return book /by Sunday".
+     * @param separatorPattern Regular expression matching the separator.
+     * @return The two parts, or null if the separator is missing or a part is blank.
+     */
+    private static String[] splitAtSeparator(String text, String separatorPattern) {
+        // Limit of 2 keeps any later occurrence of the separator inside the second part,
+        // so "/by the 2nd /by lunchtime" is a due date rather than another split point.
+        String[] parts = text.split(separatorPattern, 2);
+        boolean hasBothParts = parts.length == 2 && !parts[0].isBlank() && !parts[1].isBlank();
+        return hasBothParts ? parts : null;
+    }
+
+    /**
      * Adds a deadline described by the text after the "deadline" command word,
      * which is expected to read "<task> /by <when>".
      *
      * @param argument Text after the command word.
      */
     private static void addDeadline(String argument) {
-        // Limit of 2 keeps everything after the first "/by" together as the due date.
-        String[] parts = argument.split(BY_SEPARATOR_PATTERN, 2);
-        boolean hasBothParts = parts.length == 2 && !parts[0].isBlank() && !parts[1].isBlank();
-        if (!hasBothParts) {
+        String[] descriptionAndBy = splitAtSeparator(argument, BY_SEPARATOR_PATTERN);
+        if (descriptionAndBy == null) {
             reply("Please use: deadline <task> /by <when>",
                     "e.g. deadline return book /by Sunday");
             return;
         }
 
-        addTask(new Deadline(parts[0], parts[1]));
+        addTask(new Deadline(descriptionAndBy[0], descriptionAndBy[1]));
     }
 
     /**
@@ -160,23 +175,25 @@ public class Turing {
      * @param argument Text after the command word.
      */
     private static void addEvent(String argument) {
-        // Split at "/from" first, then split whatever follows it at "/to".
-        String[] descriptionAndTimes = argument.split(FROM_SEPARATOR_PATTERN, 2);
-        String[] times = descriptionAndTimes.length == 2
-                ? descriptionAndTimes[1].split(TO_SEPARATOR_PATTERN, 2)
-                : new String[0];
-
-        boolean hasAllParts = times.length == 2
-                && !descriptionAndTimes[0].isBlank()
-                && !times[0].isBlank()
-                && !times[1].isBlank();
-        if (!hasAllParts) {
-            reply("Please use: event <task> /from <start> /to <end>",
-                    "e.g. event project meeting /from Mon 2pm /to 4pm");
+        String[] descriptionAndTimes = splitAtSeparator(argument, FROM_SEPARATOR_PATTERN);
+        if (descriptionAndTimes == null) {
+            showEventUsage();
             return;
         }
 
-        addTask(new Event(descriptionAndTimes[0], times[0], times[1]));
+        String[] startAndEnd = splitAtSeparator(descriptionAndTimes[1], TO_SEPARATOR_PATTERN);
+        if (startAndEnd == null) {
+            showEventUsage();
+            return;
+        }
+
+        addTask(new Event(descriptionAndTimes[0], startAndEnd[0], startAndEnd[1]));
+    }
+
+    /** Reminds the user of the shape an event command has to take. */
+    private static void showEventUsage() {
+        reply("Please use: event <task> /from <start> /to <end>",
+                "e.g. event project meeting /from Mon 2pm /to 4pm");
     }
 
     /**
