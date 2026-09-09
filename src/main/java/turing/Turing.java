@@ -1,3 +1,5 @@
+package turing;
+
 import java.util.Scanner;
 
 import turing.task.Deadline;
