@@ -124,7 +124,16 @@ code as it is written, not as a clean-up pass afterwards.
 
 ## Project note on packages
 
-The "put every class in a package" rule is deliberately deferred in this
-repository: introducing packages is the separate **A-Packages** increment of the
-course project. Until that increment is done, classes stay in the default
-package. Every other rule above applies now.
+The **A-Packages** increment has been done, so the "put every class in a
+package" rule now applies in full: no class goes in the default package. The
+source root stays `src/main/java`, and `src`, `main` and `java` are *not*
+package names.
+
+| Package | Holds | Role |
+|---|---|---|
+| `turing` | `Turing`, `Command`, `TuringException` | The layer the user talks to: reading input, the vocabulary it accepts, and how a refusal is explained. |
+| `turing.task` | `Task`, `Todo`, `Deadline`, `Event`, `TaskList` | What the user is tracking. Knows nothing about commands or printing. |
+
+Put a new class in the package whose job it shares. Add a further package only
+once it would hold more than one class — a package built around a single class
+buys nothing. Run the app with `java -cp <classes-dir> turing.Turing`.
