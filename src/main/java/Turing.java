@@ -35,6 +35,10 @@ public class Turing {
     /** Pattern matching the "/to" separator of an event command. */
     private static final String TO_SEPARATOR_PATTERN = "(?i)\\s*/to\\s*";
 
+    /** Reminder of the shape an event command has to take. */
+    private static final String EVENT_USAGE =
+            "Please use: event <task> /from <start> /to <end>, e.g. event meeting /from Mon 2pm /to 4pm";
+
     /** Tasks entered so far. */
     private final TaskList tasks = new TaskList();
 
@@ -93,11 +97,12 @@ public class Turing {
      * Adds a todo described by the text after the "todo" command word.
      *
      * @param description What the user has to do.
+     * @throws TuringException If the description is missing.
      */
-    private void addTodo(String description) {
+    private void addTodo(String description) throws TuringException {
         if (description.isEmpty()) {
-            reply("Please tell me what the todo is, e.g. todo borrow book");
-            return;
+            throw new TuringException("A todo needs a description, or I have nothing to remember.",
+                    "Please use: todo <task>, e.g. todo borrow book");
         }
 
         addTask(new Todo(description));
@@ -125,13 +130,13 @@ public class Turing {
      * which is expected to read {@code <task> /by <when>}.
      *
      * @param argument Text after the command word.
+     * @throws TuringException If the task or the due date is missing.
      */
-    private void addDeadline(String argument) {
+    private void addDeadline(String argument) throws TuringException {
         String[] descriptionAndBy = splitAtSeparator(argument, BY_SEPARATOR_PATTERN);
         if (descriptionAndBy == null) {
-            reply("Please use: deadline <task> /by <when>",
-                    "e.g. deadline return book /by Sunday");
-            return;
+            throw new TuringException("A deadline needs a task and a due date, separated by /by.",
+                    "Please use: deadline <task> /by <when>, e.g. deadline return book /by Sunday");
         }
 
         addTask(new Deadline(descriptionAndBy[0], descriptionAndBy[1]));
@@ -142,27 +147,21 @@ public class Turing {
      * is expected to read {@code <task> /from <start> /to <end>}.
      *
      * @param argument Text after the command word.
+     * @throws TuringException If the task, the start or the end is missing.
      */
-    private void addEvent(String argument) {
+    private void addEvent(String argument) throws TuringException {
         String[] descriptionAndTimes = splitAtSeparator(argument, FROM_SEPARATOR_PATTERN);
         if (descriptionAndTimes == null) {
-            showEventUsage();
-            return;
+            throw new TuringException("An event needs a task and a start time, separated by /from.", EVENT_USAGE);
         }
 
         String[] startAndEnd = splitAtSeparator(descriptionAndTimes[1], TO_SEPARATOR_PATTERN);
         if (startAndEnd == null) {
-            showEventUsage();
-            return;
+            throw new TuringException("An event needs an end time after its start time, separated by /to.",
+                    EVENT_USAGE);
         }
 
         addTask(new Event(descriptionAndTimes[0], startAndEnd[0], startAndEnd[1]));
-    }
-
-    /** Reminds the user of the shape an event command has to take. */
-    private static void showEventUsage() {
-        reply("Please use: event <task> /from <start> /to <end>",
-                "e.g. event project meeting /from Mon 2pm /to 4pm");
     }
 
     /**
