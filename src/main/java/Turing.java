@@ -35,6 +35,10 @@ public class Turing {
     /** Pattern matching the "/to" separator of an event command. */
     private static final String TO_SEPARATOR_PATTERN = "(?i)\\s*/to\\s*";
 
+    /** Reminder of the shape an event command has to take. */
+    private static final String EVENT_USAGE =
+            "Please use: event <task> /from <start> /to <end>, e.g. event meeting /from Mon 2pm /to 4pm";
+
     /** Tasks entered so far. */
     private final TaskList tasks = new TaskList();
 
@@ -73,14 +77,15 @@ public class Turing {
     }
 
     /**
-     * Stores a task and confirms it to the user, refusing it if the list is full.
+     * Stores a task and confirms it to the user.
      *
      * @param task Task to store.
+     * @throws TuringException If the list has no room left.
      */
-    private void addTask(Task task) {
+    private void addTask(Task task) throws TuringException {
         if (tasks.isFull()) {
-            reply("Sorry, I can only remember " + TaskList.MAX_TASKS + " tasks.");
-            return;
+            throw new TuringException("Sorry, I can only remember " + TaskList.MAX_TASKS
+                    + " tasks, so I cannot add another one.");
         }
 
         tasks.add(task);
@@ -93,11 +98,12 @@ public class Turing {
      * Adds a todo described by the text after the "todo" command word.
      *
      * @param description What the user has to do.
+     * @throws TuringException If the description is missing.
      */
-    private void addTodo(String description) {
+    private void addTodo(String description) throws TuringException {
         if (description.isEmpty()) {
-            reply("Please tell me what the todo is, e.g. todo borrow book");
-            return;
+            throw new TuringException("A todo needs a description, or I have nothing to remember.",
+                    "Please use: todo <task>, e.g. todo borrow book");
         }
 
         addTask(new Todo(description));
@@ -125,13 +131,13 @@ public class Turing {
      * which is expected to read {@code <task> /by <when>}.
      *
      * @param argument Text after the command word.
+     * @throws TuringException If the task or the due date is missing.
      */
-    private void addDeadline(String argument) {
+    private void addDeadline(String argument) throws TuringException {
         String[] descriptionAndBy = splitAtSeparator(argument, BY_SEPARATOR_PATTERN);
         if (descriptionAndBy == null) {
-            reply("Please use: deadline <task> /by <when>",
-                    "e.g. deadline return book /by Sunday");
-            return;
+            throw new TuringException("A deadline needs a task and a due date, separated by /by.",
+                    "Please use: deadline <task> /by <when>, e.g. deadline return book /by Sunday");
         }
 
         addTask(new Deadline(descriptionAndBy[0], descriptionAndBy[1]));
@@ -142,27 +148,21 @@ public class Turing {
      * is expected to read {@code <task> /from <start> /to <end>}.
      *
      * @param argument Text after the command word.
+     * @throws TuringException If the task, the start or the end is missing.
      */
-    private void addEvent(String argument) {
+    private void addEvent(String argument) throws TuringException {
         String[] descriptionAndTimes = splitAtSeparator(argument, FROM_SEPARATOR_PATTERN);
         if (descriptionAndTimes == null) {
-            showEventUsage();
-            return;
+            throw new TuringException("An event needs a task and a start time, separated by /from.", EVENT_USAGE);
         }
 
         String[] startAndEnd = splitAtSeparator(descriptionAndTimes[1], TO_SEPARATOR_PATTERN);
         if (startAndEnd == null) {
-            showEventUsage();
-            return;
+            throw new TuringException("An event needs an end time after its start time, separated by /to.",
+                    EVENT_USAGE);
         }
 
         addTask(new Event(descriptionAndTimes[0], startAndEnd[0], startAndEnd[1]));
-    }
-
-    /** Reminds the user of the shape an event command has to take. */
-    private static void showEventUsage() {
-        reply("Please use: event <task> /from <start> /to <end>",
-                "e.g. event project meeting /from Mon 2pm /to 4pm");
     }
 
     /**
@@ -171,21 +171,14 @@ public class Turing {
      *
      * @param argument Text after the command word, expected to be a task number.
      * @param isDone True to mark the task as done, false to mark it as not done.
+     * @throws TuringException If the argument does not name a stored task.
      */
-    private void setDoneStatus(String argument, boolean isDone) {
-        int taskNumber;
-        try {
-            taskNumber = Integer.parseInt(argument);
-        } catch (NumberFormatException exception) {
-            // The user typed something like "mark two", or nothing at all after "mark".
-            reply("Please tell me the task number, e.g. mark 2");
-            return;
-        }
-
-        if (!tasks.hasTaskNumber(taskNumber)) {
-            reply("There is no task " + taskNumber + " in your list.");
-            return;
-        }
+    private void setDoneStatus(String argument, boolean isDone) throws TuringException {
+        // Naming the word the user actually typed keeps the advice in any error
+        // message something they can copy straight back into the next command.
+        String commandWord = isDone ? "mark" : "unmark";
+        int taskNumber = parseTaskNumber(argument, commandWord);
+        requireStoredTaskNumber(taskNumber, commandWord);
 
         Task task = tasks.getTask(taskNumber);
         String confirmation;
@@ -197,6 +190,47 @@ public class Turing {
             confirmation = "OK, I've marked this task as not done yet:";
         }
         reply(confirmation, TASK_INDENT + task);
+    }
+
+    /**
+     * Returns the task number typed after a "mark"/"unmark" command word.
+     *
+     * @param argument Text after the command word.
+     * @param commandWord Command word the user typed, quoted back in any error message.
+     * @return Task number as shown to the user, starting at 1.
+     * @throws TuringException If the text is missing or is not a whole number.
+     */
+    private static int parseTaskNumber(String argument, String commandWord) throws TuringException {
+        String usage = "Please use: " + commandWord + " <task number>, e.g. " + commandWord + " 2";
+        if (argument.isEmpty()) {
+            throw new TuringException("Please tell me which task to " + commandWord + ".", usage);
+        }
+
+        try {
+            return Integer.parseInt(argument);
+        } catch (NumberFormatException exception) {
+            // The user typed something like "mark two", or a number too large to hold.
+            throw new TuringException("I need a task number, and \"" + argument + "\" is not one.", usage);
+        }
+    }
+
+    /**
+     * Checks that a task carrying the given number is stored.
+     *
+     * @param taskNumber Task number as shown to the user, starting at 1.
+     * @param commandWord Command word the user typed, quoted back in any error message.
+     * @throws TuringException If no stored task carries that number.
+     */
+    private void requireStoredTaskNumber(int taskNumber, String commandWord) throws TuringException {
+        if (tasks.isEmpty()) {
+            throw new TuringException("Your list is empty, so there is nothing to " + commandWord + " yet.",
+                    "Add a task first, e.g. todo borrow book");
+        }
+
+        if (!tasks.hasTaskNumber(taskNumber)) {
+            throw new TuringException("There is no task " + taskNumber + " in your list.",
+                    "Please pick a number from 1 to " + tasks.getTaskCount() + ", or type list to see them.");
+        }
     }
 
     /**
@@ -220,16 +254,34 @@ public class Turing {
 
     /**
      * Carries out one line of user input and reports whether the chatbot should stop.
+     * Anything the user can put right is reported back to them and the
+     * conversation carries on, so a mistyped command never ends the session.
      *
      * @param input One line of input, with its whitespace already normalized.
      * @return True if the user asked to exit.
      */
     private boolean handleInput(String input) {
+        try {
+            return runCommand(input);
+        } catch (TuringException exception) {
+            reply(exception.getMessageLines());
+            return false;
+        }
+    }
+
+    /**
+     * Runs the command named by one line of user input.
+     *
+     * @param input One line of input, with its whitespace already normalized.
+     * @return True if the user asked to exit.
+     * @throws TuringException If the input does not name a command the chatbot can carry out.
+     */
+    private boolean runCommand(String input) throws TuringException {
         // A blank line is almost certainly a stray Enter, so ask again
         // instead of treating it as a command.
         if (input.isEmpty()) {
-            reply("Please type something so I know what to do.");
-            return false;
+            throw new TuringException("Please type something so I know what to do.",
+                    "Try one of: " + Command.getKeywords() + ".");
         }
 
         // Split off the first word: it names the command, and the rest is its argument.
@@ -249,7 +301,7 @@ public class Turing {
         case EVENT -> addEvent(argument);
         case MARK -> setDoneStatus(argument, true);
         case UNMARK -> setDoneStatus(argument, false);
-        default -> reply("Sorry, I don't know what \"" + keyword + "\" means.",
+        default -> throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.",
                 "Try one of: " + Command.getKeywords() + ".");
         }
         return false;
