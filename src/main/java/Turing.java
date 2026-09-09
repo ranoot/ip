@@ -170,21 +170,14 @@ public class Turing {
      *
      * @param argument Text after the command word, expected to be a task number.
      * @param isDone True to mark the task as done, false to mark it as not done.
+     * @throws TuringException If the argument does not name a stored task.
      */
-    private void setDoneStatus(String argument, boolean isDone) {
-        int taskNumber;
-        try {
-            taskNumber = Integer.parseInt(argument);
-        } catch (NumberFormatException exception) {
-            // The user typed something like "mark two", or nothing at all after "mark".
-            reply("Please tell me the task number, e.g. mark 2");
-            return;
-        }
-
-        if (!tasks.hasTaskNumber(taskNumber)) {
-            reply("There is no task " + taskNumber + " in your list.");
-            return;
-        }
+    private void setDoneStatus(String argument, boolean isDone) throws TuringException {
+        // Naming the word the user actually typed keeps the advice in any error
+        // message something they can copy straight back into the next command.
+        String commandWord = isDone ? "mark" : "unmark";
+        int taskNumber = parseTaskNumber(argument, commandWord);
+        requireStoredTaskNumber(taskNumber, commandWord);
 
         Task task = tasks.getTask(taskNumber);
         String confirmation;
@@ -196,6 +189,47 @@ public class Turing {
             confirmation = "OK, I've marked this task as not done yet:";
         }
         reply(confirmation, TASK_INDENT + task);
+    }
+
+    /**
+     * Returns the task number typed after a "mark"/"unmark" command word.
+     *
+     * @param argument Text after the command word.
+     * @param commandWord Command word the user typed, quoted back in any error message.
+     * @return Task number as shown to the user, starting at 1.
+     * @throws TuringException If the text is missing or is not a whole number.
+     */
+    private static int parseTaskNumber(String argument, String commandWord) throws TuringException {
+        String usage = "Please use: " + commandWord + " <task number>, e.g. " + commandWord + " 2";
+        if (argument.isEmpty()) {
+            throw new TuringException("Please tell me which task to " + commandWord + ".", usage);
+        }
+
+        try {
+            return Integer.parseInt(argument);
+        } catch (NumberFormatException exception) {
+            // The user typed something like "mark two", or a number too large to hold.
+            throw new TuringException("I need a task number, and \"" + argument + "\" is not one.", usage);
+        }
+    }
+
+    /**
+     * Checks that a task carrying the given number is stored.
+     *
+     * @param taskNumber Task number as shown to the user, starting at 1.
+     * @param commandWord Command word the user typed, quoted back in any error message.
+     * @throws TuringException If no stored task carries that number.
+     */
+    private void requireStoredTaskNumber(int taskNumber, String commandWord) throws TuringException {
+        if (tasks.isEmpty()) {
+            throw new TuringException("Your list is empty, so there is nothing to " + commandWord + " yet.",
+                    "Add a task first, e.g. todo borrow book");
+        }
+
+        if (!tasks.hasTaskNumber(taskNumber)) {
+            throw new TuringException("There is no task " + taskNumber + " in your list.",
+                    "Please pick a number from 1 to " + tasks.getTaskCount() + ", or type list to see them.");
+        }
     }
 
     /**
