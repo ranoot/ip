@@ -1,3 +1,5 @@
+package turing.task;
+
 /**
  * Holds the tasks the user has entered, in the order they were added.
  * Task numbers used here are the ones shown to the user, which start at 1, so

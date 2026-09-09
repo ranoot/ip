@@ -1,4 +1,12 @@
+package turing;
+
 import java.util.Scanner;
+
+import turing.task.Deadline;
+import turing.task.Event;
+import turing.task.Task;
+import turing.task.TaskList;
+import turing.task.Todo;
 
 /**
  * Entry point of the Turing chatbot.

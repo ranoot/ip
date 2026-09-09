@@ -1,3 +1,5 @@
+package turing;
+
 import java.util.StringJoiner;
 
 /**
