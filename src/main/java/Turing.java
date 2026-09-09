@@ -220,16 +220,34 @@ public class Turing {
 
     /**
      * Carries out one line of user input and reports whether the chatbot should stop.
+     * Anything the user can put right is reported back to them and the
+     * conversation carries on, so a mistyped command never ends the session.
      *
      * @param input One line of input, with its whitespace already normalized.
      * @return True if the user asked to exit.
      */
     private boolean handleInput(String input) {
+        try {
+            return runCommand(input);
+        } catch (TuringException exception) {
+            reply(exception.getMessageLines());
+            return false;
+        }
+    }
+
+    /**
+     * Runs the command named by one line of user input.
+     *
+     * @param input One line of input, with its whitespace already normalized.
+     * @return True if the user asked to exit.
+     * @throws TuringException If the input does not name a command the chatbot can carry out.
+     */
+    private boolean runCommand(String input) throws TuringException {
         // A blank line is almost certainly a stray Enter, so ask again
         // instead of treating it as a command.
         if (input.isEmpty()) {
-            reply("Please type something so I know what to do.");
-            return false;
+            throw new TuringException("Please type something so I know what to do.",
+                    "Try one of: " + Command.getKeywords() + ".");
         }
 
         // Split off the first word: it names the command, and the rest is its argument.
@@ -249,7 +267,7 @@ public class Turing {
         case EVENT -> addEvent(argument);
         case MARK -> setDoneStatus(argument, true);
         case UNMARK -> setDoneStatus(argument, false);
-        default -> reply("Sorry, I don't know what \"" + keyword + "\" means.",
+        default -> throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.",
                 "Try one of: " + Command.getKeywords() + ".");
         }
         return false;
