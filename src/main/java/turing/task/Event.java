@@ -1,3 +1,5 @@
+package turing.task;
+
 /**
  * Represents a task that starts and ends at a given date/time,
  * e.g. {@code project meeting (from: Mon 2pm to: 4pm)}.

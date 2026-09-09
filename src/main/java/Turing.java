@@ -1,5 +1,11 @@
 import java.util.Scanner;
 
+import turing.task.Deadline;
+import turing.task.Event;
+import turing.task.Task;
+import turing.task.TaskList;
+import turing.task.Todo;
+
 /**
  * Entry point of the Turing chatbot.
  * Supports greeting the user, adding todos, deadlines and events, listing the

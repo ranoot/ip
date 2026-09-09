@@ -1,3 +1,5 @@
+package turing.task;
+
 /**
  * Represents a task with no date or time attached to it,
  * e.g. {@code visit new theme park}.

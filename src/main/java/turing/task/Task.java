@@ -1,3 +1,5 @@
+package turing.task;
+
 /**
  * Represents a single task in the user's list, along with whether it is done.
  * Every task has a type, so this class is abstract: the concrete subclasses
