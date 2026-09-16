@@ -27,6 +27,9 @@ public enum Command {
     /** Marks a task as not done, e.g. "unmark 2". */
     UNMARK("unmark"),
 
+    /** Removes a task from the list, e.g. "delete 2". */
+    DELETE("delete"),
+
     /** Ends the conversation. */
     BYE("bye"),
 
