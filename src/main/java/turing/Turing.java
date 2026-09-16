@@ -99,7 +99,17 @@ public class Turing {
         tasks.add(task);
         reply("Got it. I've added this task:",
                 TASK_INDENT + task,
-                "Now you have " + tasks.getTaskCount() + " tasks in the list.");
+                describeTaskCount());
+    }
+
+    /**
+     * Returns the line telling the user how many tasks are stored, shown
+     * whenever the size of the list changes.
+     *
+     * @return Sentence naming the current number of tasks.
+     */
+    private String describeTaskCount() {
+        return "Now you have " + tasks.getTaskCount() + " tasks in the list.";
     }
 
     /**
@@ -242,6 +252,23 @@ public class Turing {
     }
 
     /**
+     * Removes the task named by a "delete" command and confirms the removal.
+     *
+     * @param argument Text after the command word, expected to be a task number.
+     * @throws TuringException If the argument does not name a stored task.
+     */
+    private void deleteTask(String argument) throws TuringException {
+        String commandWord = "delete";
+        int taskNumber = parseTaskNumber(argument, commandWord);
+        requireStoredTaskNumber(taskNumber, commandWord);
+
+        Task removedTask = tasks.remove(taskNumber);
+        reply("Noted. I've removed this task:",
+                TASK_INDENT + removedTask,
+                describeTaskCount());
+    }
+
+    /**
      * Returns the lines listing every stored task, ready to be passed to reply.
      *
      * @return One header line followed by one line per task.
@@ -309,6 +336,7 @@ public class Turing {
         case EVENT -> addEvent(argument);
         case MARK -> setDoneStatus(argument, true);
         case UNMARK -> setDoneStatus(argument, false);
+        case DELETE -> deleteTask(argument);
         default -> throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.",
                 "Try one of: " + Command.getKeywords() + ".");
         }
