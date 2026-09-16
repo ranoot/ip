@@ -5,6 +5,9 @@ package turing.task;
  * e.g. {@code project meeting (from: Mon 2pm to: 4pm)}.
  */
 public class Event extends Task {
+    /** Icon identifying this kind of task, in both the display and the save file. */
+    public static final String TYPE_ICON = "E";
+
     /** When the event starts, kept as free text such as "Mon 2pm". */
     protected String from;
 
@@ -26,7 +29,18 @@ public class Event extends Task {
 
     @Override
     public String getTypeIcon() {
-        return "E";
+        return TYPE_ICON;
+    }
+
+    /**
+     * Returns the event in save form, e.g.
+     * {@code E | 0 | project meeting | Mon 2pm | 4pm}.
+     *
+     * @return Save form of this event.
+     */
+    @Override
+    public String toSaveFormat() {
+        return super.toSaveFormat() + SAVE_SEPARATOR + from + SAVE_SEPARATOR + to;
     }
 
     /**

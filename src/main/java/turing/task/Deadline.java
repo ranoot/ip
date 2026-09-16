@@ -5,6 +5,9 @@ package turing.task;
  * e.g. {@code return book (by: Sunday)}.
  */
 public class Deadline extends Task {
+    /** Icon identifying this kind of task, in both the display and the save file. */
+    public static final String TYPE_ICON = "D";
+
     /** When the task is due, kept as free text such as "Sunday" or "11/10/2019 5pm". */
     protected String by;
 
@@ -21,7 +24,17 @@ public class Deadline extends Task {
 
     @Override
     public String getTypeIcon() {
-        return "D";
+        return TYPE_ICON;
+    }
+
+    /**
+     * Returns the deadline in save form, e.g. {@code D | 0 | return book | Sunday}.
+     *
+     * @return Save form of this deadline.
+     */
+    @Override
+    public String toSaveFormat() {
+        return super.toSaveFormat() + SAVE_SEPARATOR + by;
     }
 
     /**
