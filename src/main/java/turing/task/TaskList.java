@@ -76,4 +76,28 @@ public class TaskList {
         // Task numbers shown to the user start at 1, but array indexes start at 0.
         return tasks[taskNumber - 1];
     }
+
+    /**
+     * Removes the task with the given number and returns it. Every later task
+     * moves up one place, so the numbers the user sees stay consecutive. The
+     * caller is expected to have checked {@link #hasTaskNumber(int)} first.
+     *
+     * @param taskNumber Task number as shown to the user, starting at 1.
+     * @return Task that was removed.
+     */
+    public Task remove(int taskNumber) {
+        Task removedTask = getTask(taskNumber);
+
+        // Close the gap the removed task leaves behind. The loop starts at the
+        // index of the task after it, which is its own task number.
+        for (int i = taskNumber; i < taskCount; i++) {
+            tasks[i - 1] = tasks[i];
+        }
+
+        taskCount--;
+        // The last slot now holds a second reference to the task before it,
+        // which would keep a removed task alive once the list shrinks again.
+        tasks[taskCount] = null;
+        return removedTask;
+    }
 }
