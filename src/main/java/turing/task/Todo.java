@@ -5,6 +5,9 @@ package turing.task;
  * e.g. {@code visit new theme park}.
  */
 public class Todo extends Task {
+    /** Icon identifying this kind of task, in both the display and the save file. */
+    public static final String TYPE_ICON = "T";
+
     /**
      * Creates a todo that starts off as not done.
      *
@@ -16,6 +19,6 @@ public class Todo extends Task {
 
     @Override
     public String getTypeIcon() {
-        return "T";
+        return TYPE_ICON;
     }
 }

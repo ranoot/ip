@@ -10,37 +10,52 @@ import java.util.StringJoiner;
  */
 public enum Command {
     /** Adds a task with no date/time, e.g. "todo borrow book". */
-    TODO("todo"),
+    TODO("todo", true),
 
     /** Adds a task with a due date, e.g. "deadline return book /by Sunday". */
-    DEADLINE("deadline"),
+    DEADLINE("deadline", true),
 
     /** Adds a task with a start and an end, e.g. "event meeting /from 2pm /to 4pm". */
-    EVENT("event"),
+    EVENT("event", true),
 
     /** Shows everything stored so far. */
-    LIST("list"),
+    LIST("list", false),
 
     /** Marks a task as done, e.g. "mark 2". */
-    MARK("mark"),
+    MARK("mark", true),
 
     /** Marks a task as not done, e.g. "unmark 2". */
-    UNMARK("unmark"),
+    UNMARK("unmark", true),
 
     /** Removes a task from the list, e.g. "delete 2". */
-    DELETE("delete"),
+    DELETE("delete", true),
 
     /** Ends the conversation. */
-    BYE("bye"),
+    BYE("bye", false),
 
     /** Stands for anything the chatbot does not recognize, so it has no keyword. */
-    UNKNOWN("");
+    UNKNOWN("", false);
 
     /** Word the user types to invoke this command. */
     private final String keyword;
 
-    Command(String keyword) {
+    /** True if carrying out this command can change the task list. */
+    private final boolean isSaveNeeded;
+
+    Command(String keyword, boolean isSaveNeeded) {
         this.keyword = keyword;
+        this.isSaveNeeded = isSaveNeeded;
+    }
+
+    /**
+     * Returns whether the task list has to be written to disk after this
+     * command runs. Recording it here means a command added later cannot be
+     * forgotten by whichever code decides when to save.
+     *
+     * @return True if this command can change the task list.
+     */
+    public boolean isSaveNeeded() {
+        return isSaveNeeded;
     }
 
     /**

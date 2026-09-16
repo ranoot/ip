@@ -47,8 +47,14 @@ public class Turing {
     private static final String EVENT_USAGE =
             "Please use: event <task> /from <start> /to <end>, e.g. event meeting /from Mon 2pm /to 4pm";
 
+    /** Where the tasks are kept between runs, relative to where the chatbot is started. */
+    private static final String SAVE_FILE_PATH = "data/turing.txt";
+
     /** Tasks entered so far. */
     private final TaskList tasks = new TaskList();
+
+    /** Reads and writes the save file holding those tasks. */
+    private final Storage storage = new Storage(SAVE_FILE_PATH);
 
     /**
      * Prints one or more lines wrapped between two dividers, so that every
@@ -325,7 +331,8 @@ public class Turing {
         String keyword = words[0];
         String argument = words.length > 1 ? words[1] : "";
 
-        switch (Command.fromKeyword(keyword)) {
+        Command command = Command.fromKeyword(keyword);
+        switch (command) {
         case BYE -> {
             reply("Bye. Hope to see you again soon!");
             return true;
@@ -340,7 +347,45 @@ public class Turing {
         default -> throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.",
                 "Try one of: " + Command.getKeywords() + ".");
         }
+
+        // Only reached once the command has run without complaint, so whatever
+        // it changed is worth writing out before the user types the next one.
+        if (command.isSaveNeeded()) {
+            saveTasks();
+        }
         return false;
+    }
+
+    /**
+     * Fills the task list from the save file, explaining anything that went
+     * wrong. A problem here is not fatal: the chatbot carries on with whatever
+     * it managed to read, which on a first run is nothing at all.
+     */
+    private void loadTasks() {
+        try {
+            int skippedLineCount = storage.load(tasks);
+            if (skippedLineCount > 0) {
+                reply("I could not make sense of " + skippedLineCount + " line(s) in your save file,",
+                        "so I left them out. Everything else is back in your list.");
+            } else if (!tasks.isEmpty()) {
+                reply("Welcome back. I remembered " + tasks.getTaskCount() + " tasks from last time.");
+            }
+        } catch (TuringException exception) {
+            reply(exception.getMessageLines());
+        }
+    }
+
+    /**
+     * Writes the task list to the save file, explaining a failure to the user.
+     * The change they just made stays in the list either way, so a save that
+     * fails is worth reporting but not worth undoing the command over.
+     */
+    private void saveTasks() {
+        try {
+            storage.save(tasks);
+        } catch (TuringException exception) {
+            reply(exception.getMessageLines());
+        }
     }
 
     /**
@@ -349,6 +394,7 @@ public class Turing {
      */
     private void run() {
         showWelcome();
+        loadTasks();
 
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNextLine()) {

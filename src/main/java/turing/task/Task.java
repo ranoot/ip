@@ -7,6 +7,15 @@ package turing.task;
  * icon and, where they carry extra date/time information, their own display form.
  */
 public abstract class Task {
+    /** Separator written between the fields of a task in the save file. */
+    public static final String SAVE_SEPARATOR = " | ";
+
+    /** Field written in the save file for a task that is done. */
+    public static final String DONE_FLAG = "1";
+
+    /** Field written in the save file for a task that is not done. */
+    public static final String NOT_DONE_FLAG = "0";
+
     /** What the user has to do, exactly as typed. */
     protected String description;
 
@@ -50,6 +59,22 @@ public abstract class Task {
     /** Marks this task as not done yet. */
     public void markAsNotDone() {
         this.isDone = false;
+    }
+
+    /**
+     * Returns the task in the form written to the save file, e.g.
+     * {@code T | 1 | read book}. The type icon comes first so that a saved
+     * line can be read back into a task of the right kind, and a subclass
+     * carrying extra information appends it in the order its constructor
+     * expects. Display uses {@link #toString()} instead: the two forms are
+     * kept apart so that reworded output cannot make an old save file
+     * unreadable.
+     *
+     * @return Save form of this task.
+     */
+    public String toSaveFormat() {
+        return getTypeIcon() + SAVE_SEPARATOR + (isDone ? DONE_FLAG : NOT_DONE_FLAG)
+                + SAVE_SEPARATOR + description;
     }
 
     /**
