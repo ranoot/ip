@@ -23,3 +23,36 @@ Prerequisites: JDK 25, update Intellij to the most recent version.
    ```
 
 **Warning:** Keep the `src\main\java` folder as the root folder for Java files (i.e., don't rename those folders or move Java files to another folder outside of this folder path), as this is the default location some tools (e.g., Gradle) expect to find Java files.
+
+## Building an executable JAR
+
+Prerequisite: JDK 25 on your `PATH`.
+
+From the project root:
+
+```
+./build-jar.sh
+```
+
+This compiles everything under `src/main/java` and packages it into
+`build/turing.jar`, recording `turing.Turing` in the JAR's manifest as the class
+to start. Run the packaged chatbot with:
+
+```
+java -jar build/turing.jar
+```
+
+The JAR is self-contained, so it can be copied anywhere and run on any machine
+with a JDK 25 runtime.
+
+Without a POSIX shell, the same two steps are:
+
+```
+javac -d build/classes src/main/java/turing/*.java src/main/java/turing/task/*.java
+jar --create --file build/turing.jar --main-class turing.Turing -C build/classes .
+```
+
+**Note:** the chatbot saves your tasks to `data/turing.txt` *relative to the
+folder you run it from*, not to wherever the JAR sits. Run it from the folder
+you want that data in. `build/` and `data/` are both git-ignored, being a build
+product and the user's own data rather than source.
