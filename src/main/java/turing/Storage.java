@@ -79,7 +79,7 @@ public class Storage {
             }
 
             Task task = parseSavedTask(line);
-            if (task == null || tasks.isFull()) {
+            if (task == null) {
                 skippedLineCount++;
                 continue;
             }

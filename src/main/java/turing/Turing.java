@@ -1,5 +1,7 @@
 package turing;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import turing.task.Deadline;
@@ -94,14 +96,8 @@ public class Turing {
      * Stores a task and confirms it to the user.
      *
      * @param task Task to store.
-     * @throws TuringException If the list has no room left.
      */
-    private void addTask(Task task) throws TuringException {
-        if (tasks.isFull()) {
-            throw new TuringException("Sorry, I can only remember " + TaskList.MAX_TASKS
-                    + " tasks, so I cannot add another one.");
-        }
-
+    private void addTask(Task task) {
         tasks.add(task);
         reply("Got it. I've added this task:",
                 TASK_INDENT + task,
@@ -284,13 +280,13 @@ public class Turing {
             return new String[] {"There is nothing in your list yet."};
         }
 
-        int taskCount = tasks.getTaskCount();
-        String[] lines = new String[taskCount + 1];
-        lines[0] = "Here are the tasks in your list:";
-        for (int taskNumber = 1; taskNumber <= taskCount; taskNumber++) {
-            lines[taskNumber] = taskNumber + "." + tasks.getTask(taskNumber);
+        List<String> lines = new ArrayList<>();
+        lines.add("Here are the tasks in your list:");
+        for (int taskNumber = 1; taskNumber <= tasks.getTaskCount(); taskNumber++) {
+            lines.add(taskNumber + "." + tasks.getTask(taskNumber));
         }
-        return lines;
+        // reply takes the lines one by one, so hand it an array of them.
+        return lines.toArray(new String[0]);
     }
 
     /**
