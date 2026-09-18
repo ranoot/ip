@@ -94,14 +94,8 @@ public class Turing {
      * Stores a task and confirms it to the user.
      *
      * @param task Task to store.
-     * @throws TuringException If the list has no room left.
      */
-    private void addTask(Task task) throws TuringException {
-        if (tasks.isFull()) {
-            throw new TuringException("Sorry, I can only remember " + TaskList.MAX_TASKS
-                    + " tasks, so I cannot add another one.");
-        }
-
+    private void addTask(Task task) {
         tasks.add(task);
         reply("Got it. I've added this task:",
                 TASK_INDENT + task,

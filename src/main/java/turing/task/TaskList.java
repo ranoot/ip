@@ -1,21 +1,19 @@
 package turing.task;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Holds the tasks the user has entered, in the order they were added.
  * Task numbers used here are the ones shown to the user, which start at 1, so
- * callers never have to translate between those numbers and array indexes.
+ * callers never have to translate between those numbers and list positions.
  */
 public class TaskList {
-    /** Upper bound on the number of tasks, as allowed by the requirements. */
-    public static final int MAX_TASKS = 100;
+    // An ArrayList grows on demand, so the list is limited only by memory and
+    // no code has to guard against running out of room.
 
-    // A fixed-size array is enough while the requirements cap the task count at 100.
-
-    /** Tasks stored so far, filled from index 0 upwards. */
-    private final Task[] tasks = new Task[MAX_TASKS];
-
-    /** Number of entries of tasks that are in use, which is also the next free index. */
-    private int taskCount = 0;
+    /** Tasks stored so far, in the order the user added them. */
+    private final List<Task> tasks = new ArrayList<>();
 
     /**
      * Returns how many tasks are stored.
@@ -23,7 +21,7 @@ public class TaskList {
      * @return Number of stored tasks.
      */
     public int getTaskCount() {
-        return taskCount;
+        return tasks.size();
     }
 
     /**
@@ -32,27 +30,16 @@ public class TaskList {
      * @return True if the list holds no tasks.
      */
     public boolean isEmpty() {
-        return taskCount == 0;
+        return tasks.isEmpty();
     }
 
     /**
-     * Returns whether the list has run out of room.
-     *
-     * @return True if no further task can be stored.
-     */
-    public boolean isFull() {
-        return taskCount == MAX_TASKS;
-    }
-
-    /**
-     * Adds a task to the end of the list. The caller is expected to have
-     * checked {@link #isFull()} first.
+     * Adds a task to the end of the list.
      *
      * @param task Task to store.
      */
     public void add(Task task) {
-        tasks[taskCount] = task;
-        taskCount++;
+        tasks.add(task);
     }
 
     /**
@@ -62,7 +49,7 @@ public class TaskList {
      * @return True if a task with that number exists.
      */
     public boolean hasTaskNumber(int taskNumber) {
-        return taskNumber >= 1 && taskNumber <= taskCount;
+        return taskNumber >= 1 && taskNumber <= getTaskCount();
     }
 
     /**
@@ -73,8 +60,8 @@ public class TaskList {
      * @return Task carrying that number.
      */
     public Task getTask(int taskNumber) {
-        // Task numbers shown to the user start at 1, but array indexes start at 0.
-        return tasks[taskNumber - 1];
+        // Task numbers shown to the user start at 1, but list positions start at 0.
+        return tasks.get(taskNumber - 1);
     }
 
     /**
@@ -86,18 +73,6 @@ public class TaskList {
      * @return Task that was removed.
      */
     public Task remove(int taskNumber) {
-        Task removedTask = getTask(taskNumber);
-
-        // Close the gap the removed task leaves behind. The loop starts at the
-        // index of the task after it, which is its own task number.
-        for (int i = taskNumber; i < taskCount; i++) {
-            tasks[i - 1] = tasks[i];
-        }
-
-        taskCount--;
-        // The last slot now holds a second reference to the task before it,
-        // which would keep a removed task alive once the list shrinks again.
-        tasks[taskCount] = null;
-        return removedTask;
+        return tasks.remove(taskNumber - 1);
     }
 }
