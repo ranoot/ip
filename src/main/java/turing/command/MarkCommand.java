@@ -1,5 +1,6 @@
 package turing.command;
 
+import turing.Storage;
 import turing.TuringException;
 import turing.Ui;
 import turing.task.Task;
@@ -29,7 +30,7 @@ public class MarkCommand extends Command {
     }
 
     @Override
-    public void execute(TaskList tasks, Ui ui) throws TuringException {
+    public void execute(TaskList tasks, Ui ui, Storage storage) throws TuringException {
         requireStoredTaskNumber(tasks, taskNumber, getCommandWord());
 
         Task task = tasks.getTask(taskNumber);
@@ -39,11 +40,7 @@ public class MarkCommand extends Command {
             task.markAsNotDone();
         }
         ui.showTaskMarked(task, isDone);
-    }
-
-    @Override
-    public boolean isSaveNeeded() {
-        return true;
+        save(tasks, ui, storage);
     }
 
     /**

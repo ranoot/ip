@@ -1,5 +1,6 @@
 package turing.command;
 
+import turing.Storage;
 import turing.TuringException;
 import turing.Ui;
 import turing.task.TaskList;
@@ -18,9 +19,10 @@ public abstract class Command {
      *
      * @param tasks Task list the command works on.
      * @param ui Voice the command reports its outcome through.
+     * @param storage Save file the command writes to if it changes the list.
      * @throws TuringException If the command cannot be carried out as typed.
      */
-    public abstract void execute(TaskList tasks, Ui ui) throws TuringException;
+    public abstract void execute(TaskList tasks, Ui ui, Storage storage) throws TuringException;
 
     /**
      * Returns whether the conversation ends after this command. Only the exit
@@ -33,14 +35,20 @@ public abstract class Command {
     }
 
     /**
-     * Returns whether this command can change the task list, and so whether
-     * the list has to be written out once it has run. Commands that only look
-     * at the list leave this alone.
+     * Writes the task list out, explaining a failure to the user. The change
+     * the user just made stays in the list either way, so a save that fails is
+     * worth reporting but not worth undoing the command over.
      *
-     * @return True if the task list may have changed.
+     * @param tasks Task list to write.
+     * @param ui Voice any complaint is made through.
+     * @param storage Save file to write to.
      */
-    public boolean isSaveNeeded() {
-        return false;
+    protected static void save(TaskList tasks, Ui ui, Storage storage) {
+        try {
+            storage.save(tasks);
+        } catch (TuringException exception) {
+            ui.showError(exception);
+        }
     }
 
     /**

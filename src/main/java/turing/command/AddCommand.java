@@ -1,5 +1,6 @@
 package turing.command;
 
+import turing.Storage;
 import turing.Ui;
 import turing.task.Task;
 import turing.task.TaskList;
@@ -23,13 +24,9 @@ public class AddCommand extends Command {
     }
 
     @Override
-    public void execute(TaskList tasks, Ui ui) {
+    public void execute(TaskList tasks, Ui ui, Storage storage) {
         tasks.add(task);
         ui.showTaskAdded(task, tasks.getTaskCount());
-    }
-
-    @Override
-    public boolean isSaveNeeded() {
-        return true;
+        save(tasks, ui, storage);
     }
 }

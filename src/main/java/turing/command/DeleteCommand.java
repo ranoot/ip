@@ -1,5 +1,6 @@
 package turing.command;
 
+import turing.Storage;
 import turing.TuringException;
 import turing.Ui;
 import turing.task.Task;
@@ -20,15 +21,11 @@ public class DeleteCommand extends Command {
     }
 
     @Override
-    public void execute(TaskList tasks, Ui ui) throws TuringException {
+    public void execute(TaskList tasks, Ui ui, Storage storage) throws TuringException {
         requireStoredTaskNumber(tasks, taskNumber, CommandWord.DELETE.getKeyword());
 
         Task removedTask = tasks.remove(taskNumber);
         ui.showTaskRemoved(removedTask, tasks.getTaskCount());
-    }
-
-    @Override
-    public boolean isSaveNeeded() {
-        return true;
+        save(tasks, ui, storage);
     }
 }

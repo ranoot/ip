@@ -44,10 +44,7 @@ public class Turing {
     private boolean handleInput(String rawInput) {
         try {
             Command command = Parser.parse(rawInput);
-            command.execute(tasks, ui);
-            if (command.isSaveNeeded()) {
-                saveTasks();
-            }
+            command.execute(tasks, ui, storage);
             return command.isExit();
         } catch (TuringException exception) {
             ui.showError(exception);
@@ -68,19 +65,6 @@ public class Turing {
             } else if (!tasks.isEmpty()) {
                 ui.showTasksRestored(tasks.getTaskCount());
             }
-        } catch (TuringException exception) {
-            ui.showError(exception);
-        }
-    }
-
-    /**
-     * Writes the task list to the save file, explaining a failure to the user.
-     * The change the user just made stays in the list either way, so a save
-     * that fails is worth reporting but not worth undoing the command over.
-     */
-    private void saveTasks() {
-        try {
-            storage.save(tasks);
         } catch (TuringException exception) {
             ui.showError(exception);
         }
