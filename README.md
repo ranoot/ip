@@ -26,30 +26,32 @@ Prerequisites: JDK 25, update Intellij to the most recent version.
 
 ## Building an executable JAR
 
-Prerequisite: JDK 25 on your `PATH`.
+Prerequisite: JDK 25 on your `PATH`. Gradle itself does not have to be
+installed: the wrapper script fetches the right version the first time it runs.
 
 From the project root:
 
 ```
-./build-jar.sh
+./gradlew clean shadowJar
 ```
 
-This compiles everything under `src/main/java` and packages it into
-`build/turing.jar`, recording `turing.Turing` in the JAR's manifest as the class
-to start. Run the packaged chatbot with:
+or, on Windows, `gradlew.bat clean shadowJar`.
+
+This compiles everything under `src/main/java` and packages it, together with
+anything it depends on, into `build/libs/turing.jar`. `turing.Turing` is
+recorded in the JAR's manifest as the class to start, so the chatbot runs with:
 
 ```
-java -jar build/turing.jar
+java -jar build/libs/turing.jar
 ```
 
 The JAR is self-contained, so it can be copied anywhere and run on any machine
 with a JDK 25 runtime.
 
-Without a POSIX shell, the same two steps are:
+To run the chatbot from the sources without packaging it first:
 
 ```
-javac -d build/classes src/main/java/turing/*.java src/main/java/turing/task/*.java
-jar --create --file build/turing.jar --main-class turing.Turing -C build/classes .
+./gradlew run
 ```
 
 **Note:** the chatbot saves your tasks to `data/turing.txt` *relative to the
