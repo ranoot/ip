@@ -1,15 +1,21 @@
 package turing;
 
+import turing.command.AddCommand;
+import turing.command.Command;
+import turing.command.CommandWord;
+import turing.command.DeleteCommand;
+import turing.command.ExitCommand;
+import turing.command.ListCommand;
+import turing.command.MarkCommand;
 import turing.task.Deadline;
 import turing.task.Event;
 import turing.task.Todo;
 
 /**
- * Makes sense of the lines the user types, turning them into the pieces the
- * chatbot acts on: a command word, its argument, a task number, or a ready
- * made task. Keeping the shape of every command here means the class that
- * carries the commands out never has to pick a line of text apart, and a
- * change to the accepted syntax touches only this class.
+ * Makes sense of the lines the user types, turning each one into the command
+ * it asks for. Keeping the shape of every command here means the rest of the
+ * chatbot never has to pick a line of text apart, and a change to the
+ * accepted syntax touches only this class.
  */
 public class Parser {
     // The separators below are regular expressions rather than plain text, so that
@@ -42,18 +48,46 @@ public class Parser {
      * @param text Raw line typed by the user.
      * @return Text with normalized whitespace.
      */
-    public static String normalizeWhitespace(String text) {
+    private static String normalizeWhitespace(String text) {
         return text.trim().replaceAll("\\s+", " ");
     }
 
     /**
-     * Returns the command named by the first word of the input.
+     * Returns the command one line of user input asks for, already carrying
+     * whatever that command needs to know.
+     *
+     * @param rawInput One line of input, exactly as the user typed it.
+     * @return Command ready to be carried out.
+     * @throws TuringException If the input names no known command, or names one
+     *         but does not give it what it needs.
+     */
+    public static Command parse(String rawInput) throws TuringException {
+        String input = normalizeWhitespace(rawInput);
+        CommandWord commandWord = parseCommandWord(input);
+        String argument = parseArgument(input);
+
+        // A switch expression over the enum means the compiler, rather than a
+        // reader, checks that every command word can be built into a command.
+        return switch (commandWord) {
+        case TODO -> new AddCommand(parseTodo(argument));
+        case DEADLINE -> new AddCommand(parseDeadline(argument));
+        case EVENT -> new AddCommand(parseEvent(argument));
+        case LIST -> new ListCommand();
+        case MARK -> new MarkCommand(parseTaskNumber(argument, commandWord), true);
+        case UNMARK -> new MarkCommand(parseTaskNumber(argument, commandWord), false);
+        case DELETE -> new DeleteCommand(parseTaskNumber(argument, commandWord));
+        case BYE -> new ExitCommand();
+        };
+    }
+
+    /**
+     * Returns the command word named by the first word of the input.
      *
      * @param input One line of input, with its whitespace already normalized.
-     * @return Command the user asked for.
+     * @return Command word the user typed.
      * @throws TuringException If the input is blank or names no known command.
      */
-    public static Command parseCommand(String input) throws TuringException {
+    private static CommandWord parseCommandWord(String input) throws TuringException {
         // A blank line is almost certainly a stray Enter, so ask again
         // instead of treating it as a command.
         if (input.isEmpty()) {
@@ -61,11 +95,11 @@ public class Parser {
         }
 
         String keyword = splitIntoKeywordAndArgument(input)[0];
-        Command command = Command.fromKeyword(keyword);
-        if (command == null) {
+        CommandWord commandWord = CommandWord.fromKeyword(keyword);
+        if (commandWord == null) {
             throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.", suggestKeywords());
         }
-        return command;
+        return commandWord;
     }
 
     /**
@@ -75,7 +109,7 @@ public class Parser {
      * @param input One line of input, with its whitespace already normalized.
      * @return Text after the first word, or an empty string if there is none.
      */
-    public static String parseArgument(String input) {
+    private static String parseArgument(String input) {
         String[] words = splitIntoKeywordAndArgument(input);
         return words.length > 1 ? words[1] : "";
     }
@@ -87,7 +121,7 @@ public class Parser {
      * @return Todo carrying that description.
      * @throws TuringException If the description is missing.
      */
-    public static Todo parseTodo(String argument) throws TuringException {
+    private static Todo parseTodo(String argument) throws TuringException {
         if (argument.isEmpty()) {
             throw new TuringException("A todo needs a description, or I have nothing to remember.",
                     "Please use: todo <task>, e.g. todo borrow book");
@@ -104,7 +138,7 @@ public class Parser {
      * @return Deadline carrying that description and due date.
      * @throws TuringException If the task or the due date is missing.
      */
-    public static Deadline parseDeadline(String argument) throws TuringException {
+    private static Deadline parseDeadline(String argument) throws TuringException {
         String[] descriptionAndBy = splitAtSeparator(argument, BY_SEPARATOR_PATTERN);
         if (descriptionAndBy == null) {
             throw new TuringException("A deadline needs a task and a due date, separated by /by.",
@@ -122,7 +156,7 @@ public class Parser {
      * @return Event carrying that description, start and end.
      * @throws TuringException If the task, the start or the end is missing.
      */
-    public static Event parseEvent(String argument) throws TuringException {
+    private static Event parseEvent(String argument) throws TuringException {
         String[] descriptionAndTimes = splitAtSeparator(argument, FROM_SEPARATOR_PATTERN);
         if (descriptionAndTimes == null) {
             throw new TuringException("An event needs a task and a start time, separated by /from.", EVENT_USAGE);
@@ -141,14 +175,15 @@ public class Parser {
      * Returns the task number typed after a command word such as "mark".
      *
      * @param argument Text after the command word.
-     * @param commandWord Command word the user typed, quoted back in any error message.
+     * @param commandWord Command the user typed, quoted back in any error message.
      * @return Task number as shown to the user, starting at 1.
      * @throws TuringException If the text is missing or is not a whole number.
      */
-    public static int parseTaskNumber(String argument, String commandWord) throws TuringException {
-        String usage = "Please use: " + commandWord + " <task number>, e.g. " + commandWord + " 2";
+    private static int parseTaskNumber(String argument, CommandWord commandWord) throws TuringException {
+        String keyword = commandWord.getKeyword();
+        String usage = "Please use: " + keyword + " <task number>, e.g. " + keyword + " 2";
         if (argument.isEmpty()) {
-            throw new TuringException("Please tell me which task to " + commandWord + ".", usage);
+            throw new TuringException("Please tell me which task to " + keyword + ".", usage);
         }
 
         try {
@@ -166,7 +201,7 @@ public class Parser {
      * @return Sentence naming every command keyword.
      */
     private static String suggestKeywords() {
-        return "Try one of: " + Command.getKeywords() + ".";
+        return "Try one of: " + CommandWord.getKeywords() + ".";
     }
 
     /**

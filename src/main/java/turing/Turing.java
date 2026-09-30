@@ -1,6 +1,6 @@
 package turing;
 
-import turing.task.Task;
+import turing.command.Command;
 import turing.task.TaskList;
 
 /**
@@ -34,74 +34,6 @@ public class Turing {
     }
 
     /**
-     * Stores a task and confirms it to the user.
-     *
-     * @param task Task to store.
-     */
-    private void addTask(Task task) {
-        tasks.add(task);
-        ui.showTaskAdded(task, tasks.getTaskCount());
-    }
-
-    /**
-     * Changes the done status of the task named by a "mark"/"unmark" command
-     * and reports the outcome to the user.
-     *
-     * @param argument Text after the command word, expected to be a task number.
-     * @param isDone True to mark the task as done, false to mark it as not done.
-     * @throws TuringException If the argument does not name a stored task.
-     */
-    private void setDoneStatus(String argument, boolean isDone) throws TuringException {
-        // Naming the word the user actually typed keeps the advice in any error
-        // message something they can copy straight back into the next command.
-        String commandWord = isDone ? "mark" : "unmark";
-        int taskNumber = Parser.parseTaskNumber(argument, commandWord);
-        requireStoredTaskNumber(taskNumber, commandWord);
-
-        Task task = tasks.getTask(taskNumber);
-        if (isDone) {
-            task.markAsDone();
-        } else {
-            task.markAsNotDone();
-        }
-        ui.showTaskMarked(task, isDone);
-    }
-
-    /**
-     * Checks that a task carrying the given number is stored.
-     *
-     * @param taskNumber Task number as shown to the user, starting at 1.
-     * @param commandWord Command word the user typed, quoted back in any error message.
-     * @throws TuringException If no stored task carries that number.
-     */
-    private void requireStoredTaskNumber(int taskNumber, String commandWord) throws TuringException {
-        if (tasks.isEmpty()) {
-            throw new TuringException("Your list is empty, so there is nothing to " + commandWord + " yet.",
-                    "Add a task first, e.g. todo borrow book");
-        }
-
-        if (!tasks.hasTaskNumber(taskNumber)) {
-            throw new TuringException("There is no task " + taskNumber + " in your list.",
-                    "Please pick a number from 1 to " + tasks.getTaskCount() + ", or type list to see them.");
-        }
-    }
-
-    /**
-     * Removes the task named by a "delete" command and confirms the removal.
-     *
-     * @param argument Text after the command word, expected to be a task number.
-     * @throws TuringException If the argument does not name a stored task.
-     */
-    private void deleteTask(String argument) throws TuringException {
-        String commandWord = "delete";
-        int taskNumber = Parser.parseTaskNumber(argument, commandWord);
-        requireStoredTaskNumber(taskNumber, commandWord);
-
-        Task removedTask = tasks.remove(taskNumber);
-        ui.showTaskRemoved(removedTask, tasks.getTaskCount());
-    }
-
-    /**
      * Carries out one line of user input and reports whether the chatbot should stop.
      * Anything the user can put right is reported back to them and the
      * conversation carries on, so a mistyped command never ends the session.
@@ -111,48 +43,16 @@ public class Turing {
      */
     private boolean handleInput(String rawInput) {
         try {
-            return runCommand(Parser.normalizeWhitespace(rawInput));
+            Command command = Parser.parse(rawInput);
+            command.execute(tasks, ui);
+            if (command.isSaveNeeded()) {
+                saveTasks();
+            }
+            return command.isExit();
         } catch (TuringException exception) {
             ui.showError(exception);
             return false;
         }
-    }
-
-    /**
-     * Runs the command named by one line of user input.
-     *
-     * @param input One line of input, with its whitespace already normalized.
-     * @return True if the user asked to exit.
-     * @throws TuringException If the input does not name a command the chatbot
-     *         can carry out, or the command cannot be carried out as typed.
-     */
-    private boolean runCommand(String input) throws TuringException {
-        Command command = Parser.parseCommand(input);
-        String argument = Parser.parseArgument(input);
-
-        switch (command) {
-        case BYE -> {
-            ui.showGoodbye();
-            return true;
-        }
-        case LIST -> ui.showTaskList(tasks);
-        case TODO -> addTask(Parser.parseTodo(argument));
-        case DEADLINE -> addTask(Parser.parseDeadline(argument));
-        case EVENT -> addTask(Parser.parseEvent(argument));
-        case MARK -> setDoneStatus(argument, true);
-        case UNMARK -> setDoneStatus(argument, false);
-        case DELETE -> deleteTask(argument);
-        // Parser only ever returns a command, so reaching here means a command
-        // was added to the enum without being given a case above.
-        default -> throw new IllegalStateException("Command not handled: " + command);
-        }
-
-        // Only reached once the command has run without complaint, so whatever
-        // it changed is worth writing out before the user types the next one.
-        if (command.isSaveNeeded()) {
-            saveTasks();
-        }
-        return false;
     }
 
     /**
@@ -175,8 +75,8 @@ public class Turing {
 
     /**
      * Writes the task list to the save file, explaining a failure to the user.
-     * The change they just made stays in the list either way, so a save that
-     * fails is worth reporting but not worth undoing the command over.
+     * The change the user just made stays in the list either way, so a save
+     * that fails is worth reporting but not worth undoing the command over.
      */
     private void saveTasks() {
         try {
@@ -194,11 +94,9 @@ public class Turing {
         ui.showWelcome();
         loadTasks();
 
-        while (ui.hasNextCommand()) {
-            boolean shouldExit = handleInput(ui.readCommand());
-            if (shouldExit) {
-                break;
-            }
+        boolean isExit = false;
+        while (!isExit && ui.hasNextCommand()) {
+            isExit = handleInput(ui.readCommand());
         }
     }
 
