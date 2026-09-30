@@ -2,29 +2,31 @@ package turing.task;
 
 /**
  * Represents a task that starts and ends at a given date/time,
- * e.g. {@code project meeting (from: Mon 2pm to: 4pm)}.
+ * e.g. {@code project meeting (from: Oct 15 2019 2:00PM to: 4:00PM)}.
  */
 public class Event extends Task {
     /** Icon identifying this kind of task, in both the display and the save file. */
     public static final String TYPE_ICON = "E";
 
-    /** When the event starts, kept as free text such as "Mon 2pm". */
-    protected String from;
+    /** When the event starts. */
+    protected final TaskTime from;
 
-    /** When the event ends, kept as free text such as "4pm". */
-    protected String to;
+    /** When the event ends. */
+    protected final TaskTime to;
 
     /**
      * Creates an event that starts off as not done.
      *
      * @param description What the user has to do.
-     * @param from When the event starts.
-     * @param to When the event ends.
+     * @param from When the event starts, as the user wrote it.
+     * @param to When the event ends, as the user wrote it.
      */
     public Event(String description, String from, String to) {
         super(description);
-        this.from = from;
-        this.to = to;
+        // Both arrive as text whether the user just typed them or they came
+        // back from the save file, so an event reads its own dates.
+        this.from = TaskTime.of(from);
+        this.to = TaskTime.of(to);
     }
 
     @Override
@@ -40,12 +42,13 @@ public class Event extends Task {
      */
     @Override
     public String toSaveFormat() {
-        return super.toSaveFormat() + SAVE_SEPARATOR + from + SAVE_SEPARATOR + to;
+        return super.toSaveFormat() + SAVE_SEPARATOR + from.toSaveFormat()
+                + SAVE_SEPARATOR + to.toSaveFormat();
     }
 
     /**
      * Returns the event formatted for display, e.g.
-     * {@code [E][ ] project meeting (from: Mon 2pm to: 4pm)}. The shared part of
+     * {@code [E][ ] project meeting (from: Oct 15 2019 to: Oct 16 2019)}. The shared part of
      * the text comes from the superclass, so only the times are added here.
      *
      * @return Display form of this event.

@@ -33,7 +33,8 @@ public class Parser {
 
     /** Reminder of the shape an event command has to take. */
     private static final String EVENT_USAGE =
-            "Please use: event <task> /from <start> /to <end>, e.g. event meeting /from Mon 2pm /to 4pm";
+            "Please use: event <task> /from <start> /to <end>, "
+                    + "e.g. event meeting /from 2019-10-15 1400 /to 2019-10-15 1600";
 
     /** Parsing needs no state of its own, so the class is never instantiated. */
     private Parser() {
@@ -142,7 +143,7 @@ public class Parser {
         String[] descriptionAndBy = splitAtSeparator(argument, BY_SEPARATOR_PATTERN);
         if (descriptionAndBy == null) {
             throw new TuringException("A deadline needs a task and a due date, separated by /by.",
-                    "Please use: deadline <task> /by <when>, e.g. deadline return book /by Sunday");
+                    "Please use: deadline <task> /by <when>, e.g. deadline return book /by 2019-10-15");
         }
 
         return new Deadline(descriptionAndBy[0], descriptionAndBy[1]);
