@@ -1,9 +1,5 @@
 package turing;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-
 import turing.task.Deadline;
 import turing.task.Event;
 import turing.task.Task;
@@ -17,21 +13,6 @@ import turing.task.Todo;
  * types "bye".
  */
 public class Turing {
-    /** Banner shown once when the chatbot starts. */
-    private static final String BANNER = """
-             _____ _   _ ____  ___ _   _  ____
-            |_   _| | | |  _ \\|_ _| \\ | |/ ___|
-              | | | | | | |_) || ||  \\| | |  _
-              | | | |_| |  _ < | || |\\  | |_| |
-              |_|  \\___/|_| \\_\\___|_| \\_|\\____|
-            """;
-
-    /** Horizontal divider printed around every chatbot response. */
-    private static final String DIVIDER = "____________________________________________________________";
-
-    /** Indent placed before a task when a reply shows it on its own line. */
-    private static final String TASK_INDENT = "  ";
-
     // The separators below are regular expressions rather than plain text, so that
     // "(?i)" can make them case insensitive and "\\s*" can absorb any spaces around
     // them. That way "/BY Sunday" and "book/by Sunday" are understood too.
@@ -52,32 +33,14 @@ public class Turing {
     /** Where the tasks are kept between runs, relative to where the chatbot is started. */
     private static final String SAVE_FILE_PATH = "data/turing.txt";
 
+    /** Talks to the user: reads their commands and shows them every reply. */
+    private final Ui ui = new Ui();
+
     /** Tasks entered so far. */
     private final TaskList tasks = new TaskList();
 
     /** Reads and writes the save file holding those tasks. */
     private final Storage storage = new Storage(SAVE_FILE_PATH);
-
-    /**
-     * Prints one or more lines wrapped between two dividers, so that every
-     * chatbot reply has a consistent look.
-     *
-     * @param lines Lines of text to show to the user.
-     */
-    private static void reply(String... lines) {
-        System.out.println(DIVIDER);
-        for (String line : lines) {
-            System.out.println(" " + line);
-        }
-        System.out.println(DIVIDER);
-        System.out.println();
-    }
-
-    /** Prints the banner and the greeting shown when the chatbot starts. */
-    private static void showWelcome() {
-        System.out.println(BANNER);
-        reply("Hello! I'm Turing", "What can I do for you?");
-    }
 
     /**
      * Returns the given text with surrounding whitespace removed and every run
@@ -99,19 +62,7 @@ public class Turing {
      */
     private void addTask(Task task) {
         tasks.add(task);
-        reply("Got it. I've added this task:",
-                TASK_INDENT + task,
-                describeTaskCount());
-    }
-
-    /**
-     * Returns the line telling the user how many tasks are stored, shown
-     * whenever the size of the list changes.
-     *
-     * @return Sentence naming the current number of tasks.
-     */
-    private String describeTaskCount() {
-        return "Now you have " + tasks.getTaskCount() + " tasks in the list.";
+        ui.showTaskAdded(task, tasks.getTaskCount());
     }
 
     /**
@@ -201,15 +152,12 @@ public class Turing {
         requireStoredTaskNumber(taskNumber, commandWord);
 
         Task task = tasks.getTask(taskNumber);
-        String confirmation;
         if (isDone) {
             task.markAsDone();
-            confirmation = "Nice! I've marked this task as done:";
         } else {
             task.markAsNotDone();
-            confirmation = "OK, I've marked this task as not done yet:";
         }
-        reply(confirmation, TASK_INDENT + task);
+        ui.showTaskMarked(task, isDone);
     }
 
     /**
@@ -265,28 +213,7 @@ public class Turing {
         requireStoredTaskNumber(taskNumber, commandWord);
 
         Task removedTask = tasks.remove(taskNumber);
-        reply("Noted. I've removed this task:",
-                TASK_INDENT + removedTask,
-                describeTaskCount());
-    }
-
-    /**
-     * Returns the lines listing every stored task, ready to be passed to reply.
-     *
-     * @return One header line followed by one line per task.
-     */
-    private String[] formatTaskList() {
-        if (tasks.isEmpty()) {
-            return new String[] {"There is nothing in your list yet."};
-        }
-
-        List<String> lines = new ArrayList<>();
-        lines.add("Here are the tasks in your list:");
-        for (int taskNumber = 1; taskNumber <= tasks.getTaskCount(); taskNumber++) {
-            lines.add(taskNumber + "." + tasks.getTask(taskNumber));
-        }
-        // reply takes the lines one by one, so hand it an array of them.
-        return lines.toArray(new String[0]);
+        ui.showTaskRemoved(removedTask, tasks.getTaskCount());
     }
 
     /**
@@ -294,14 +221,14 @@ public class Turing {
      * Anything the user can put right is reported back to them and the
      * conversation carries on, so a mistyped command never ends the session.
      *
-     * @param input One line of input, with its whitespace already normalized.
+     * @param rawInput One line of input, exactly as the user typed it.
      * @return True if the user asked to exit.
      */
-    private boolean handleInput(String input) {
+    private boolean handleInput(String rawInput) {
         try {
-            return runCommand(input);
+            return runCommand(normalizeWhitespace(rawInput));
         } catch (TuringException exception) {
-            reply(exception.getMessageLines());
+            ui.showError(exception);
             return false;
         }
     }
@@ -330,10 +257,10 @@ public class Turing {
         Command command = Command.fromKeyword(keyword);
         switch (command) {
         case BYE -> {
-            reply("Bye. Hope to see you again soon!");
+            ui.showGoodbye();
             return true;
         }
-        case LIST -> reply(formatTaskList());
+        case LIST -> ui.showTaskList(tasks);
         case TODO -> addTodo(argument);
         case DEADLINE -> addDeadline(argument);
         case EVENT -> addEvent(argument);
@@ -361,13 +288,12 @@ public class Turing {
         try {
             int skippedLineCount = storage.load(tasks);
             if (skippedLineCount > 0) {
-                reply("I could not make sense of " + skippedLineCount + " line(s) in your save file,",
-                        "so I left them out. Everything else is back in your list.");
+                ui.showSkippedSaveLines(skippedLineCount);
             } else if (!tasks.isEmpty()) {
-                reply("Welcome back. I remembered " + tasks.getTaskCount() + " tasks from last time.");
+                ui.showTasksRestored(tasks.getTaskCount());
             }
         } catch (TuringException exception) {
-            reply(exception.getMessageLines());
+            ui.showError(exception);
         }
     }
 
@@ -380,7 +306,7 @@ public class Turing {
         try {
             storage.save(tasks);
         } catch (TuringException exception) {
-            reply(exception.getMessageLines());
+            ui.showError(exception);
         }
     }
 
@@ -389,12 +315,11 @@ public class Turing {
      * says goodbye or the input ends.
      */
     private void run() {
-        showWelcome();
+        ui.showWelcome();
         loadTasks();
 
-        Scanner scanner = new Scanner(System.in);
-        while (scanner.hasNextLine()) {
-            boolean shouldExit = handleInput(normalizeWhitespace(scanner.nextLine()));
+        while (ui.hasNextCommand()) {
+            boolean shouldExit = handleInput(ui.readCommand());
             if (shouldExit) {
                 break;
             }
