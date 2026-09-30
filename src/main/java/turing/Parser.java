@@ -47,13 +47,25 @@ public class Parser {
     }
 
     /**
-     * Returns the first word of the input, which names the command to run.
+     * Returns the command named by the first word of the input.
      *
      * @param input One line of input, with its whitespace already normalized.
-     * @return First word, or an empty string if the input is empty.
+     * @return Command the user asked for.
+     * @throws TuringException If the input is blank or names no known command.
      */
-    public static String parseKeyword(String input) {
-        return splitIntoKeywordAndArgument(input)[0];
+    public static Command parseCommand(String input) throws TuringException {
+        // A blank line is almost certainly a stray Enter, so ask again
+        // instead of treating it as a command.
+        if (input.isEmpty()) {
+            throw new TuringException("Please type something so I know what to do.", suggestKeywords());
+        }
+
+        String keyword = splitIntoKeywordAndArgument(input)[0];
+        Command command = Command.fromKeyword(keyword);
+        if (command == null) {
+            throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.", suggestKeywords());
+        }
+        return command;
     }
 
     /**
@@ -145,6 +157,16 @@ public class Parser {
             // The user typed something like "mark two", or a number too large to hold.
             throw new TuringException("I need a task number, and \"" + argument + "\" is not one.", usage);
         }
+    }
+
+    /**
+     * Returns the advice offered whenever the input names no command, which
+     * lists the words the chatbot does answer to.
+     *
+     * @return Sentence naming every command keyword.
+     */
+    private static String suggestKeywords() {
+        return "Try one of: " + Command.getKeywords() + ".";
     }
 
     /**

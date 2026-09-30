@@ -112,20 +112,13 @@ public class Turing {
      *
      * @param input One line of input, with its whitespace already normalized.
      * @return True if the user asked to exit.
-     * @throws TuringException If the input does not name a command the chatbot can carry out.
+     * @throws TuringException If the input does not name a command the chatbot
+     *         can carry out, or the command cannot be carried out as typed.
      */
     private boolean runCommand(String input) throws TuringException {
-        // A blank line is almost certainly a stray Enter, so ask again
-        // instead of treating it as a command.
-        if (input.isEmpty()) {
-            throw new TuringException("Please type something so I know what to do.",
-                    "Try one of: " + Command.getKeywords() + ".");
-        }
-
-        String keyword = Parser.parseKeyword(input);
+        Command command = Parser.parseCommand(input);
         String argument = Parser.parseArgument(input);
 
-        Command command = Command.fromKeyword(keyword);
         switch (command) {
         case BYE -> {
             ui.showGoodbye();
@@ -138,8 +131,9 @@ public class Turing {
         case MARK -> setDoneStatus(argument, true);
         case UNMARK -> setDoneStatus(argument, false);
         case DELETE -> deleteTask(argument);
-        default -> throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.",
-                "Try one of: " + Command.getKeywords() + ".");
+        // Parser only ever returns a command, so reaching here means a command
+        // was added to the enum without being given a case above.
+        default -> throw new IllegalStateException("Command not handled: " + command);
         }
 
         // Only reached once the command has run without complaint, so whatever
