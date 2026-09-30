@@ -14,13 +14,24 @@ public class Turing {
     private static final String SAVE_FILE_PATH = "data/turing.txt";
 
     /** Talks to the user: reads their commands and shows them every reply. */
-    private final Ui ui = new Ui();
+    private final Ui ui;
 
     /** Tasks entered so far. */
-    private final TaskList tasks = new TaskList();
+    private final TaskList tasks;
 
     /** Reads and writes the save file holding those tasks. */
-    private final Storage storage = new Storage(SAVE_FILE_PATH);
+    private final Storage storage;
+
+    /**
+     * Creates a chatbot that remembers its tasks in the given file.
+     *
+     * @param saveFilePath Path to the save file, relative to where the chatbot is run.
+     */
+    public Turing(String saveFilePath) {
+        ui = new Ui();
+        tasks = new TaskList();
+        storage = new Storage(saveFilePath);
+    }
 
     /**
      * Stores a task and confirms it to the user.
@@ -179,7 +190,7 @@ public class Turing {
      * Runs the chatbot, reading commands from standard input until the user
      * says goodbye or the input ends.
      */
-    private void run() {
+    public void run() {
         ui.showWelcome();
         loadTasks();
 
@@ -197,6 +208,6 @@ public class Turing {
      * @param args Command line arguments, which are not used.
      */
     public static void main(String[] args) {
-        new Turing().run();
+        new Turing(SAVE_FILE_PATH).run();
     }
 }
