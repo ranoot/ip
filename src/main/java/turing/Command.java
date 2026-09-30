@@ -31,10 +31,7 @@ public enum Command {
     DELETE("delete", true),
 
     /** Ends the conversation. */
-    BYE("bye", false),
-
-    /** Stands for anything the chatbot does not recognize, so it has no keyword. */
-    UNKNOWN("", false);
+    BYE("bye", false);
 
     /** Word the user types to invoke this command. */
     private final String keyword;
@@ -63,15 +60,15 @@ public enum Command {
      * without regard to capitalization, so "BYE" and "bye" name the same command.
      *
      * @param keyword First word of the user's input.
-     * @return Matching command, or UNKNOWN if no command uses that word.
+     * @return Matching command, or null if no command uses that word.
      */
     public static Command fromKeyword(String keyword) {
         for (Command command : values()) {
-            if (command != UNKNOWN && command.keyword.equalsIgnoreCase(keyword)) {
+            if (command.keyword.equalsIgnoreCase(keyword)) {
                 return command;
             }
         }
-        return UNKNOWN;
+        return null;
     }
 
     /**
@@ -83,9 +80,7 @@ public enum Command {
     public static String getKeywords() {
         StringJoiner keywords = new StringJoiner(", ");
         for (Command command : values()) {
-            if (command != UNKNOWN) {
-                keywords.add(command.keyword);
-            }
+            keywords.add(command.keyword);
         }
         return keywords.toString();
     }

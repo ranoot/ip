@@ -1,14 +1,7 @@
 package turing;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-
-import turing.task.Deadline;
-import turing.task.Event;
 import turing.task.Task;
 import turing.task.TaskList;
-import turing.task.Todo;
 
 /**
  * Entry point of the Turing chatbot.
@@ -17,79 +10,27 @@ import turing.task.Todo;
  * types "bye".
  */
 public class Turing {
-    /** Banner shown once when the chatbot starts. */
-    private static final String BANNER = """
-             _____ _   _ ____  ___ _   _  ____
-            |_   _| | | |  _ \\|_ _| \\ | |/ ___|
-              | | | | | | |_) || ||  \\| | |  _
-              | | | |_| |  _ < | || |\\  | |_| |
-              |_|  \\___/|_| \\_\\___|_| \\_|\\____|
-            """;
-
-    /** Horizontal divider printed around every chatbot response. */
-    private static final String DIVIDER = "____________________________________________________________";
-
-    /** Indent placed before a task when a reply shows it on its own line. */
-    private static final String TASK_INDENT = "  ";
-
-    // The separators below are regular expressions rather than plain text, so that
-    // "(?i)" can make them case insensitive and "\\s*" can absorb any spaces around
-    // them. That way "/BY Sunday" and "book/by Sunday" are understood too.
-
-    /** Pattern matching the "/by" separator of a deadline command. */
-    private static final String BY_SEPARATOR_PATTERN = "(?i)\\s*/by\\s*";
-
-    /** Pattern matching the "/from" separator of an event command. */
-    private static final String FROM_SEPARATOR_PATTERN = "(?i)\\s*/from\\s*";
-
-    /** Pattern matching the "/to" separator of an event command. */
-    private static final String TO_SEPARATOR_PATTERN = "(?i)\\s*/to\\s*";
-
-    /** Reminder of the shape an event command has to take. */
-    private static final String EVENT_USAGE =
-            "Please use: event <task> /from <start> /to <end>, e.g. event meeting /from Mon 2pm /to 4pm";
-
     /** Where the tasks are kept between runs, relative to where the chatbot is started. */
     private static final String SAVE_FILE_PATH = "data/turing.txt";
 
+    /** Talks to the user: reads their commands and shows them every reply. */
+    private final Ui ui;
+
     /** Tasks entered so far. */
-    private final TaskList tasks = new TaskList();
+    private final TaskList tasks;
 
     /** Reads and writes the save file holding those tasks. */
-    private final Storage storage = new Storage(SAVE_FILE_PATH);
+    private final Storage storage;
 
     /**
-     * Prints one or more lines wrapped between two dividers, so that every
-     * chatbot reply has a consistent look.
+     * Creates a chatbot that remembers its tasks in the given file.
      *
-     * @param lines Lines of text to show to the user.
+     * @param saveFilePath Path to the save file, relative to where the chatbot is run.
      */
-    private static void reply(String... lines) {
-        System.out.println(DIVIDER);
-        for (String line : lines) {
-            System.out.println(" " + line);
-        }
-        System.out.println(DIVIDER);
-        System.out.println();
-    }
-
-    /** Prints the banner and the greeting shown when the chatbot starts. */
-    private static void showWelcome() {
-        System.out.println(BANNER);
-        reply("Hello! I'm Turing", "What can I do for you?");
-    }
-
-    /**
-     * Returns the given text with surrounding whitespace removed and every run
-     * of internal whitespace collapsed into a single space. Cleaning the input
-     * up front lets the rest of the chatbot treat "  mark    2  " exactly like
-     * "mark 2", so no other code has to worry about stray spaces or tabs.
-     *
-     * @param text Raw line typed by the user.
-     * @return Text with normalized whitespace.
-     */
-    private static String normalizeWhitespace(String text) {
-        return text.trim().replaceAll("\\s+", " ");
+    public Turing(String saveFilePath) {
+        ui = new Ui();
+        tasks = new TaskList();
+        storage = new Storage(saveFilePath);
     }
 
     /**
@@ -99,90 +40,7 @@ public class Turing {
      */
     private void addTask(Task task) {
         tasks.add(task);
-        reply("Got it. I've added this task:",
-                TASK_INDENT + task,
-                describeTaskCount());
-    }
-
-    /**
-     * Returns the line telling the user how many tasks are stored, shown
-     * whenever the size of the list changes.
-     *
-     * @return Sentence naming the current number of tasks.
-     */
-    private String describeTaskCount() {
-        return "Now you have " + tasks.getTaskCount() + " tasks in the list.";
-    }
-
-    /**
-     * Adds a todo described by the text after the "todo" command word.
-     *
-     * @param description What the user has to do.
-     * @throws TuringException If the description is missing.
-     */
-    private void addTodo(String description) throws TuringException {
-        if (description.isEmpty()) {
-            throw new TuringException("A todo needs a description, or I have nothing to remember.",
-                    "Please use: todo <task>, e.g. todo borrow book");
-        }
-
-        addTask(new Todo(description));
-    }
-
-    /**
-     * Splits text into the part before the separator and the part after it.
-     * Both parts have to carry text for the split to count as successful, so
-     * "return book /by" and "/by Sunday" are both rejected.
-     *
-     * @param text Text to split, such as "return book /by Sunday".
-     * @param separatorPattern Regular expression matching the separator.
-     * @return The two parts, or null if the separator is missing or a part is blank.
-     */
-    private static String[] splitAtSeparator(String text, String separatorPattern) {
-        // Limit of 2 keeps any later occurrence of the separator inside the second part,
-        // so "/by the 2nd /by lunchtime" is a due date rather than another split point.
-        String[] parts = text.split(separatorPattern, 2);
-        boolean hasBothParts = parts.length == 2 && !parts[0].isBlank() && !parts[1].isBlank();
-        return hasBothParts ? parts : null;
-    }
-
-    /**
-     * Adds a deadline described by the text after the "deadline" command word,
-     * which is expected to read {@code <task> /by <when>}.
-     *
-     * @param argument Text after the command word.
-     * @throws TuringException If the task or the due date is missing.
-     */
-    private void addDeadline(String argument) throws TuringException {
-        String[] descriptionAndBy = splitAtSeparator(argument, BY_SEPARATOR_PATTERN);
-        if (descriptionAndBy == null) {
-            throw new TuringException("A deadline needs a task and a due date, separated by /by.",
-                    "Please use: deadline <task> /by <when>, e.g. deadline return book /by Sunday");
-        }
-
-        addTask(new Deadline(descriptionAndBy[0], descriptionAndBy[1]));
-    }
-
-    /**
-     * Adds an event described by the text after the "event" command word, which
-     * is expected to read {@code <task> /from <start> /to <end>}.
-     *
-     * @param argument Text after the command word.
-     * @throws TuringException If the task, the start or the end is missing.
-     */
-    private void addEvent(String argument) throws TuringException {
-        String[] descriptionAndTimes = splitAtSeparator(argument, FROM_SEPARATOR_PATTERN);
-        if (descriptionAndTimes == null) {
-            throw new TuringException("An event needs a task and a start time, separated by /from.", EVENT_USAGE);
-        }
-
-        String[] startAndEnd = splitAtSeparator(descriptionAndTimes[1], TO_SEPARATOR_PATTERN);
-        if (startAndEnd == null) {
-            throw new TuringException("An event needs an end time after its start time, separated by /to.",
-                    EVENT_USAGE);
-        }
-
-        addTask(new Event(descriptionAndTimes[0], startAndEnd[0], startAndEnd[1]));
+        ui.showTaskAdded(task, tasks.getTaskCount());
     }
 
     /**
@@ -197,41 +55,16 @@ public class Turing {
         // Naming the word the user actually typed keeps the advice in any error
         // message something they can copy straight back into the next command.
         String commandWord = isDone ? "mark" : "unmark";
-        int taskNumber = parseTaskNumber(argument, commandWord);
+        int taskNumber = Parser.parseTaskNumber(argument, commandWord);
         requireStoredTaskNumber(taskNumber, commandWord);
 
         Task task = tasks.getTask(taskNumber);
-        String confirmation;
         if (isDone) {
             task.markAsDone();
-            confirmation = "Nice! I've marked this task as done:";
         } else {
             task.markAsNotDone();
-            confirmation = "OK, I've marked this task as not done yet:";
         }
-        reply(confirmation, TASK_INDENT + task);
-    }
-
-    /**
-     * Returns the task number typed after a "mark"/"unmark" command word.
-     *
-     * @param argument Text after the command word.
-     * @param commandWord Command word the user typed, quoted back in any error message.
-     * @return Task number as shown to the user, starting at 1.
-     * @throws TuringException If the text is missing or is not a whole number.
-     */
-    private static int parseTaskNumber(String argument, String commandWord) throws TuringException {
-        String usage = "Please use: " + commandWord + " <task number>, e.g. " + commandWord + " 2";
-        if (argument.isEmpty()) {
-            throw new TuringException("Please tell me which task to " + commandWord + ".", usage);
-        }
-
-        try {
-            return Integer.parseInt(argument);
-        } catch (NumberFormatException exception) {
-            // The user typed something like "mark two", or a number too large to hold.
-            throw new TuringException("I need a task number, and \"" + argument + "\" is not one.", usage);
-        }
+        ui.showTaskMarked(task, isDone);
     }
 
     /**
@@ -261,32 +94,11 @@ public class Turing {
      */
     private void deleteTask(String argument) throws TuringException {
         String commandWord = "delete";
-        int taskNumber = parseTaskNumber(argument, commandWord);
+        int taskNumber = Parser.parseTaskNumber(argument, commandWord);
         requireStoredTaskNumber(taskNumber, commandWord);
 
         Task removedTask = tasks.remove(taskNumber);
-        reply("Noted. I've removed this task:",
-                TASK_INDENT + removedTask,
-                describeTaskCount());
-    }
-
-    /**
-     * Returns the lines listing every stored task, ready to be passed to reply.
-     *
-     * @return One header line followed by one line per task.
-     */
-    private String[] formatTaskList() {
-        if (tasks.isEmpty()) {
-            return new String[] {"There is nothing in your list yet."};
-        }
-
-        List<String> lines = new ArrayList<>();
-        lines.add("Here are the tasks in your list:");
-        for (int taskNumber = 1; taskNumber <= tasks.getTaskCount(); taskNumber++) {
-            lines.add(taskNumber + "." + tasks.getTask(taskNumber));
-        }
-        // reply takes the lines one by one, so hand it an array of them.
-        return lines.toArray(new String[0]);
+        ui.showTaskRemoved(removedTask, tasks.getTaskCount());
     }
 
     /**
@@ -294,14 +106,14 @@ public class Turing {
      * Anything the user can put right is reported back to them and the
      * conversation carries on, so a mistyped command never ends the session.
      *
-     * @param input One line of input, with its whitespace already normalized.
+     * @param rawInput One line of input, exactly as the user typed it.
      * @return True if the user asked to exit.
      */
-    private boolean handleInput(String input) {
+    private boolean handleInput(String rawInput) {
         try {
-            return runCommand(input);
+            return runCommand(Parser.normalizeWhitespace(rawInput));
         } catch (TuringException exception) {
-            reply(exception.getMessageLines());
+            ui.showError(exception);
             return false;
         }
     }
@@ -311,37 +123,28 @@ public class Turing {
      *
      * @param input One line of input, with its whitespace already normalized.
      * @return True if the user asked to exit.
-     * @throws TuringException If the input does not name a command the chatbot can carry out.
+     * @throws TuringException If the input does not name a command the chatbot
+     *         can carry out, or the command cannot be carried out as typed.
      */
     private boolean runCommand(String input) throws TuringException {
-        // A blank line is almost certainly a stray Enter, so ask again
-        // instead of treating it as a command.
-        if (input.isEmpty()) {
-            throw new TuringException("Please type something so I know what to do.",
-                    "Try one of: " + Command.getKeywords() + ".");
-        }
+        Command command = Parser.parseCommand(input);
+        String argument = Parser.parseArgument(input);
 
-        // Split off the first word: it names the command, and the rest is its argument.
-        // The limit of 2 keeps any remaining spaces inside the argument itself.
-        String[] words = input.split(" ", 2);
-        String keyword = words[0];
-        String argument = words.length > 1 ? words[1] : "";
-
-        Command command = Command.fromKeyword(keyword);
         switch (command) {
         case BYE -> {
-            reply("Bye. Hope to see you again soon!");
+            ui.showGoodbye();
             return true;
         }
-        case LIST -> reply(formatTaskList());
-        case TODO -> addTodo(argument);
-        case DEADLINE -> addDeadline(argument);
-        case EVENT -> addEvent(argument);
+        case LIST -> ui.showTaskList(tasks);
+        case TODO -> addTask(Parser.parseTodo(argument));
+        case DEADLINE -> addTask(Parser.parseDeadline(argument));
+        case EVENT -> addTask(Parser.parseEvent(argument));
         case MARK -> setDoneStatus(argument, true);
         case UNMARK -> setDoneStatus(argument, false);
         case DELETE -> deleteTask(argument);
-        default -> throw new TuringException("Sorry, I don't know what \"" + keyword + "\" means.",
-                "Try one of: " + Command.getKeywords() + ".");
+        // Parser only ever returns a command, so reaching here means a command
+        // was added to the enum without being given a case above.
+        default -> throw new IllegalStateException("Command not handled: " + command);
         }
 
         // Only reached once the command has run without complaint, so whatever
@@ -361,13 +164,12 @@ public class Turing {
         try {
             int skippedLineCount = storage.load(tasks);
             if (skippedLineCount > 0) {
-                reply("I could not make sense of " + skippedLineCount + " line(s) in your save file,",
-                        "so I left them out. Everything else is back in your list.");
+                ui.showSkippedSaveLines(skippedLineCount);
             } else if (!tasks.isEmpty()) {
-                reply("Welcome back. I remembered " + tasks.getTaskCount() + " tasks from last time.");
+                ui.showTasksRestored(tasks.getTaskCount());
             }
         } catch (TuringException exception) {
-            reply(exception.getMessageLines());
+            ui.showError(exception);
         }
     }
 
@@ -380,7 +182,7 @@ public class Turing {
         try {
             storage.save(tasks);
         } catch (TuringException exception) {
-            reply(exception.getMessageLines());
+            ui.showError(exception);
         }
     }
 
@@ -388,13 +190,12 @@ public class Turing {
      * Runs the chatbot, reading commands from standard input until the user
      * says goodbye or the input ends.
      */
-    private void run() {
-        showWelcome();
+    public void run() {
+        ui.showWelcome();
         loadTasks();
 
-        Scanner scanner = new Scanner(System.in);
-        while (scanner.hasNextLine()) {
-            boolean shouldExit = handleInput(normalizeWhitespace(scanner.nextLine()));
+        while (ui.hasNextCommand()) {
+            boolean shouldExit = handleInput(ui.readCommand());
             if (shouldExit) {
                 break;
             }
@@ -407,6 +208,6 @@ public class Turing {
      * @param args Command line arguments, which are not used.
      */
     public static void main(String[] args) {
-        new Turing().run();
+        new Turing(SAVE_FILE_PATH).run();
     }
 }
