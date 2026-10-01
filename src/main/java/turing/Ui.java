@@ -1,11 +1,13 @@
 package turing;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 import turing.task.Task;
 import turing.task.TaskList;
+import turing.task.TaskTime;
 
 /**
  * Handles everything the chatbot says to the user and everything it hears back.
@@ -74,10 +76,55 @@ public class Ui {
             return;
         }
 
+        showNumberedTasks("Here are the tasks in your list:", tasks.getTasks());
+    }
+
+    /**
+     * Shows the tasks a search turned up, numbered from 1. The numbers count
+     * the matches rather than naming positions in the full list, which is what
+     * the user sees in front of them.
+     *
+     * @param matchingTasks Tasks the search found.
+     */
+    public void showMatchingTasks(List<Task> matchingTasks) {
+        if (matchingTasks.isEmpty()) {
+            show("There are no matching tasks in your list.");
+            return;
+        }
+
+        showNumberedTasks("Here are the matching tasks in your list:", matchingTasks);
+    }
+
+    /**
+     * Shows what a given day holds, numbered from 1.
+     *
+     * @param date Day being asked about.
+     * @param tasksOnDate Tasks falling on that day.
+     */
+    public void showTasksOn(LocalDate date, List<Task> tasksOnDate) {
+        String displayedDate = TaskTime.format(date);
+        if (tasksOnDate.isEmpty()) {
+            show("You have nothing on " + displayedDate + ".");
+            return;
+        }
+
+        showNumberedTasks("Here is what you have on " + displayedDate + ":", tasksOnDate);
+    }
+
+    /**
+     * Shows a heading followed by the given tasks, numbered from 1.
+     *
+     * @param heading Line introducing the tasks.
+     * @param tasks Tasks to show, in the order they should appear.
+     */
+    private static void showNumberedTasks(String heading, List<Task> tasks) {
         List<String> lines = new ArrayList<>();
-        lines.add("Here are the tasks in your list:");
-        for (int taskNumber = 1; taskNumber <= tasks.getTaskCount(); taskNumber++) {
-            lines.add(taskNumber + "." + tasks.getTask(taskNumber));
+        lines.add(heading);
+
+        int taskNumber = 1;
+        for (Task task : tasks) {
+            lines.add(taskNumber + "." + task);
+            taskNumber++;
         }
         // show takes the lines one by one, so hand it an array of them.
         show(lines.toArray(new String[0]));

@@ -1,14 +1,19 @@
 package turing;
 
+import java.time.LocalDate;
+
 import turing.command.AddCommand;
 import turing.command.Command;
 import turing.command.CommandWord;
 import turing.command.DeleteCommand;
 import turing.command.ExitCommand;
+import turing.command.FindCommand;
 import turing.command.ListCommand;
 import turing.command.MarkCommand;
+import turing.command.OnCommand;
 import turing.task.Deadline;
 import turing.task.Event;
+import turing.task.TaskTime;
 import turing.task.Todo;
 
 /**
@@ -74,6 +79,8 @@ public class Parser {
         case DEADLINE -> new AddCommand(parseDeadline(argument));
         case EVENT -> new AddCommand(parseEvent(argument));
         case LIST -> new ListCommand();
+        case FIND -> new FindCommand(parseSearchText(argument));
+        case ON -> new OnCommand(parseDate(argument, commandWord));
         case MARK -> new MarkCommand(parseTaskNumber(argument, commandWord), true);
         case UNMARK -> new MarkCommand(parseTaskNumber(argument, commandWord), false);
         case DELETE -> new DeleteCommand(parseTaskNumber(argument, commandWord));
@@ -170,6 +177,49 @@ public class Parser {
         }
 
         return new Event(descriptionAndTimes[0], startAndEnd[0], startAndEnd[1]);
+    }
+
+    /**
+     * Returns the text a "find" command searches for.
+     *
+     * @param argument Text after the command word.
+     * @return Text to look for in a task description.
+     * @throws TuringException If nothing was given to search for.
+     */
+    private static String parseSearchText(String argument) throws TuringException {
+        if (argument.isEmpty()) {
+            throw new TuringException("Please tell me what to search for.",
+                    "Please use: find <text>, e.g. find book");
+        }
+
+        return argument;
+    }
+
+    /**
+     * Returns the date typed after a command word such as "on". Unlike the
+     * date carried by a task, this one has to be a date the chatbot
+     * recognizes: there is nothing to look for otherwise.
+     *
+     * @param argument Text after the command word.
+     * @param commandWord Command the user typed, quoted back in any error message.
+     * @return Date the user asked about.
+     * @throws TuringException If the text is missing or is not a date.
+     */
+    private static LocalDate parseDate(String argument, CommandWord commandWord) throws TuringException {
+        String keyword = commandWord.getKeyword();
+        String usage = "Please use: " + keyword + " <date>, e.g. " + keyword + " 2019-10-15";
+        if (argument.isEmpty()) {
+            throw new TuringException("Please tell me which day to look at.", usage);
+        }
+
+        // Asking a TaskTime keeps one idea of what a date looks like, shared
+        // with the dates tasks carry.
+        LocalDate date = TaskTime.of(argument).getDate();
+        if (date == null) {
+            throw new TuringException("I need a date written as yyyy-MM-dd, and \"" + argument + "\" is not one.",
+                    usage);
+        }
+        return date;
     }
 
     /**

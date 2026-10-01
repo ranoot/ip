@@ -1,5 +1,7 @@
 package turing.task;
 
+import java.time.LocalDate;
+
 /**
  * Represents a task that has to be done before a given date/time,
  * e.g. {@code return book (by: Oct 15 2019)}.
@@ -27,6 +29,11 @@ public class Deadline extends Task {
     @Override
     public String getTypeIcon() {
         return TYPE_ICON;
+    }
+
+    @Override
+    public boolean isOn(LocalDate date) {
+        return by.isOn(date);
     }
 
     /**
