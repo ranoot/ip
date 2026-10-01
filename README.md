@@ -1,6 +1,35 @@
-# Turing project template
+# Turing
 
-This is a project template for a greenfield Java project. Given below are instructions on how to use it.
+A task-tracking chatbot that lives in your terminal. Tell it what you have to
+do — todos, deadlines, events — and it keeps the list for you, saving it
+automatically so nothing is lost between runs.
+
+📖 **[User Guide](https://ranoot.github.io/ip/)** — how to use Turing.
+
+```
+____________________________________________________________
+ Got it. I've added this task:
+   [D][ ] return book (by: Oct 15 2019)
+ Now you have 2 tasks in the list.
+____________________________________________________________
+```
+
+## Running it
+
+Download `turing.jar` from the [latest release](https://github.com/ranoot/ip/releases),
+then, with JDK 25 or later on your `PATH`:
+
+```
+java -jar turing.jar
+```
+
+**Note:** the chatbot saves your tasks to `data/turing.txt` *relative to the
+folder you run it from*, not to wherever the JAR sits. Run it from the folder
+you want that data in.
+
+---
+
+The rest of this file is for working on Turing rather than using it.
 
 ## Setting up in Intellij
 
@@ -54,7 +83,10 @@ To run the chatbot from the sources without packaging it first:
 ./gradlew run
 ```
 
-**Note:** the chatbot saves your tasks to `data/turing.txt` *relative to the
-folder you run it from*, not to wherever the JAR sits. Run it from the folder
-you want that data in. `build/` and `data/` are both git-ignored, being a build
-product and the user's own data rather than source.
+`build/` and `data/` are both git-ignored, being a build product and the user's
+own data rather than source.
+
+## Documentation
+
+The user guide lives in [`docs/README.md`](docs/README.md) and is published
+through GitHub Pages from the `/docs` folder of `master`.
