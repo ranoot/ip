@@ -24,6 +24,9 @@ public enum CommandWord {
     /** Shows the tasks whose description contains some text, e.g. "find book". */
     FIND("find"),
 
+    /** Shows the tasks falling on one day, e.g. "on 2019-10-15". */
+    ON("on"),
+
     /** Marks a task as done, e.g. "mark 2". */
     MARK("mark"),
 

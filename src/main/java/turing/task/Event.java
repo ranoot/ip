@@ -1,5 +1,7 @@
 package turing.task;
 
+import java.time.LocalDate;
+
 /**
  * Represents a task that starts and ends at a given date/time,
  * e.g. {@code project meeting (from: Oct 15 2019 2:00PM to: 4:00PM)}.
@@ -32,6 +34,24 @@ public class Event extends Task {
     @Override
     public String getTypeIcon() {
         return TYPE_ICON;
+    }
+
+    /**
+     * {@inheritDoc}
+     * An event covers every day from its start to its end, so a conference
+     * running all week is on the Wednesday as much as on the Monday.
+     */
+    @Override
+    public boolean isOn(LocalDate date) {
+        LocalDate startDate = from.getDate();
+        LocalDate endDate = to.getDate();
+        if (startDate == null || endDate == null) {
+            // At least one end is free text, so there is no span to look
+            // inside: the most that can be said is whether an end is that day.
+            return from.isOn(date) || to.isOn(date);
+        }
+
+        return !date.isBefore(startDate) && !date.isAfter(endDate);
     }
 
     /**

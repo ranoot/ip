@@ -1,5 +1,7 @@
 package turing.task;
 
+import java.time.LocalDate;
+
 /**
  * Represents a single task in the user's list, along with whether it is done.
  * Every task has a type, so this class is abstract: the concrete subclasses
@@ -58,6 +60,17 @@ public abstract class Task {
      */
     public String getStatusIcon() {
         return isDone ? "X" : " ";
+    }
+
+    /**
+     * Returns whether this task falls on the given date. A task carrying no
+     * date never does, so only the kinds of task that have one override this.
+     *
+     * @param date Date to test against.
+     * @return True if this task is on that date.
+     */
+    public boolean isOn(LocalDate date) {
+        return false;
     }
 
     /** Marks this task as done. */

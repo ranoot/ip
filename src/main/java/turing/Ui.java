@@ -1,11 +1,13 @@
 package turing;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 import turing.task.Task;
 import turing.task.TaskList;
+import turing.task.TaskTime;
 
 /**
  * Handles everything the chatbot says to the user and everything it hears back.
@@ -91,6 +93,22 @@ public class Ui {
         }
 
         showNumberedTasks("Here are the matching tasks in your list:", matchingTasks);
+    }
+
+    /**
+     * Shows what a given day holds, numbered from 1.
+     *
+     * @param date Day being asked about.
+     * @param tasksOnDate Tasks falling on that day.
+     */
+    public void showTasksOn(LocalDate date, List<Task> tasksOnDate) {
+        String displayedDate = TaskTime.format(date);
+        if (tasksOnDate.isEmpty()) {
+            show("You have nothing on " + displayedDate + ".");
+            return;
+        }
+
+        showNumberedTasks("Here is what you have on " + displayedDate + ":", tasksOnDate);
     }
 
     /**

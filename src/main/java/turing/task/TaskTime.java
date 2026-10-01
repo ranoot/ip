@@ -69,6 +69,38 @@ public class TaskTime {
     }
 
     /**
+     * Returns the date this point in time falls on, or null if the text names
+     * no date the chatbot recognizes.
+     *
+     * @return Matching date, or null if there is none.
+     */
+    public LocalDate getDate() {
+        return date;
+    }
+
+    /**
+     * Returns whether this point in time falls on the given date.
+     *
+     * @param wantedDate Date to test against.
+     * @return True if this is a recognized date and it is that date.
+     */
+    public boolean isOn(LocalDate wantedDate) {
+        return wantedDate.equals(date);
+    }
+
+    /**
+     * Returns the given date in the form the chatbot shows dates in,
+     * e.g. "Oct 15 2019". Keeping it here means a date reads the same way
+     * whether it is shown as part of a task or on its own.
+     *
+     * @param date Date to show.
+     * @return Display form of that date.
+     */
+    public static String format(LocalDate date) {
+        return date.format(DISPLAY_DATE_FORMAT);
+    }
+
+    /**
      * Returns the text to write to the save file, which is what the user wrote.
      * Saving their own words rather than a reformatted date means a save file
      * written before the chatbot understood dates still reads back correctly,
@@ -120,7 +152,7 @@ public class TaskTime {
             return text;
         }
 
-        String displayedDate = date.format(DISPLAY_DATE_FORMAT);
+        String displayedDate = format(date);
         return time == null ? displayedDate : displayedDate + " " + time.format(DISPLAY_TIME_FORMAT);
     }
 }

@@ -1,5 +1,6 @@
 package turing.task;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -72,6 +73,23 @@ public class TaskList {
             }
         }
         return matchingTasks;
+    }
+
+    /**
+     * Returns the stored tasks falling on the given date, in the order they
+     * were added.
+     *
+     * @param date Date to look at.
+     * @return Tasks on that date, which is empty if none are.
+     */
+    public List<Task> getTasksOn(LocalDate date) {
+        List<Task> tasksOnDate = new ArrayList<>();
+        for (Task task : tasks) {
+            if (task.isOn(date)) {
+                tasksOnDate.add(task);
+            }
+        }
+        return tasksOnDate;
     }
 
     /**
