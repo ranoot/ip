@@ -74,10 +74,39 @@ public class Ui {
             return;
         }
 
+        showNumberedTasks("Here are the tasks in your list:", tasks.getTasks());
+    }
+
+    /**
+     * Shows the tasks a search turned up, numbered from 1. The numbers count
+     * the matches rather than naming positions in the full list, which is what
+     * the user sees in front of them.
+     *
+     * @param matchingTasks Tasks the search found.
+     */
+    public void showMatchingTasks(List<Task> matchingTasks) {
+        if (matchingTasks.isEmpty()) {
+            show("There are no matching tasks in your list.");
+            return;
+        }
+
+        showNumberedTasks("Here are the matching tasks in your list:", matchingTasks);
+    }
+
+    /**
+     * Shows a heading followed by the given tasks, numbered from 1.
+     *
+     * @param heading Line introducing the tasks.
+     * @param tasks Tasks to show, in the order they should appear.
+     */
+    private static void showNumberedTasks(String heading, List<Task> tasks) {
         List<String> lines = new ArrayList<>();
-        lines.add("Here are the tasks in your list:");
-        for (int taskNumber = 1; taskNumber <= tasks.getTaskCount(); taskNumber++) {
-            lines.add(taskNumber + "." + tasks.getTask(taskNumber));
+        lines.add(heading);
+
+        int taskNumber = 1;
+        for (Task task : tasks) {
+            lines.add(taskNumber + "." + task);
+            taskNumber++;
         }
         // show takes the lines one by one, so hand it an array of them.
         show(lines.toArray(new String[0]));

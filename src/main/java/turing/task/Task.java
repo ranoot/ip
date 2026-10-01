@@ -33,6 +33,15 @@ public abstract class Task {
     }
 
     /**
+     * Returns what the user has to do, without the type or status boxes.
+     *
+     * @return Description of this task.
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
      * Returns the single-character icon identifying the kind of task, such as
      * "T" for a todo. Each subclass decides its own icon, which is why this
      * method has no body here.

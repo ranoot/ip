@@ -1,6 +1,7 @@
 package turing.task;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,6 +41,37 @@ public class TaskList {
      */
     public void add(Task task) {
         tasks.add(task);
+    }
+
+    /**
+     * Returns every stored task, in the order they were added. The list cannot
+     * be changed through what is returned, so a caller showing the tasks
+     * cannot accidentally reorder or drop one.
+     *
+     * @return Unmodifiable view of the stored tasks.
+     */
+    public List<Task> getTasks() {
+        return Collections.unmodifiableList(tasks);
+    }
+
+    /**
+     * Returns the stored tasks whose description contains the given text,
+     * in the order they were added. Capitalization is ignored, so searching
+     * for "book" also finds "Book".
+     *
+     * @param keyword Text to look for in each description.
+     * @return Matching tasks, which is empty if none match.
+     */
+    public List<Task> find(String keyword) {
+        String wantedText = keyword.toLowerCase();
+
+        List<Task> matchingTasks = new ArrayList<>();
+        for (Task task : tasks) {
+            if (task.getDescription().toLowerCase().contains(wantedText)) {
+                matchingTasks.add(task);
+            }
+        }
+        return matchingTasks;
     }
 
     /**

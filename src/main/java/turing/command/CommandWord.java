@@ -21,6 +21,9 @@ public enum CommandWord {
     /** Shows everything stored so far. */
     LIST("list"),
 
+    /** Shows the tasks whose description contains some text, e.g. "find book". */
+    FIND("find"),
+
     /** Marks a task as done, e.g. "mark 2". */
     MARK("mark"),
 
